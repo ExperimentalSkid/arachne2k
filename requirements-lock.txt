@@ -198,7 +198,7 @@ tqdm==4.70.0
     # via
     #   huggingface-hub
     #   transformers
-transformers==5.15.1
+transformers==5.16.1
     # via -r requirements.txt
 typer==0.27.2
     # via transformers
