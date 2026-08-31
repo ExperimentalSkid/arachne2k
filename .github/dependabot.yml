@@ -4,9 +4,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    # Routine version PRs are disabled because the sealed source receipt and
+    # compiled lock require a reviewed regeneration. Security updates remain
+    # enabled in the repository security settings.
+    open-pull-requests-limit: 0
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0

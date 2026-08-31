@@ -26,7 +26,9 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements-lock.txt
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements.txt -r requirements-lock.txt
       - name: Validate dependencies and source links
         run: |
           python -m pip check
