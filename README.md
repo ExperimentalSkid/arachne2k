@@ -39,7 +39,7 @@ Use a disposable environment and do not copy a production `.env` or database
 into the source tree.
 
 ```bash
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
 python -m pytest -q
@@ -59,12 +59,14 @@ The supported Ubuntu entry point is:
 
 ```bash
 cd /root/arachne
-bash RUN_AFTER_UPLOAD.sh
+sudo bash RUN_AFTER_UPLOAD.sh bootstrap
 ```
 
 `/root/arachne` and the `arachne-*` systemd units are the canonical deployment
-namespace. Use the guided menu for configuration, safe update, service control,
-diagnostics, backup, and explicit fresh install. A one-time migration path for
+namespace. `bootstrap` detects a first installation versus existing state,
+creates safe private configuration defaults when needed, and never invokes a
+database reset. Use the guided menu for service control, diagnostics, backup,
+and explicit recovery operations. A one-time migration path for
 an installation using a different prior namespace is documented in
 [Deployment](docs/deployment.md). Do not upload a live development folder.
 Build or verify a clean source release first.

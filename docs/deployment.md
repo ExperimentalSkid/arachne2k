@@ -4,10 +4,12 @@
 
 - Ubuntu host with root access for systemd installation.
 - Python 3.12 with `venv` support.
-- Tor available on the configured SOCKS endpoint.
+- Tor available on the configured SOCKS endpoint, or Ubuntu `apt` access so
+  `bootstrap` can install and start it.
 - Enough free space for the virtual environment, database, WAL growth, logs,
   and at least one verified database snapshot.
-- A private `.env`; Telegram administrator configuration is optional.
+- A private `.env`, or permission for `bootstrap` to create it from safe defaults;
+  Telegram administrator configuration is optional.
 - A source tree or archive that passes the authoritative manifest check.
 
 The product is Arachne. `/root/arachne` and the `arachne-*` systemd names are
@@ -34,15 +36,16 @@ Extract the verified archive so its source root becomes
 
 ```bash
 cd /root/arachne
-bash RUN_AFTER_UPLOAD.sh configure-env
-bash RUN_AFTER_UPLOAD.sh fresh-install
-bash RUN_AFTER_UPLOAD.sh status
+sudo bash RUN_AFTER_UPLOAD.sh bootstrap
 ```
 
-`fresh-install` is intentionally destructive to crawler and dashboard-access
-SQLite state. It preserves source, `.env`, Telegram credentials, Telegram
-sessions, and existing backups. Do not use it for an update that must preserve
-analyst data.
+`bootstrap` requires Python 3.12, verifies the source manifest, creates a mode
+`0600` root-owned `.env` from safe defaults when absent, and detects existing
+databases or canonical service units. A zero-state host uses normal idempotent
+initialization without a reset; detected existing state uses the restore-point-
+protected update path. The first installation also prints a one-hour dashboard
+access code. `fresh-install` remains an explicitly destructive recovery command
+and is not part of ordinary installation.
 
 Telegram is an optional integration. When its API ID, API hash, bot token, or
 administrator ID is absent, installation continues with `arachne-bot.service`
@@ -99,6 +102,19 @@ bash RUN_AFTER_UPLOAD.sh safe-update
 bash RUN_AFTER_UPLOAD.sh status
 bash RUN_AFTER_UPLOAD.sh logs
 ```
+
+Running `bootstrap` is also safe here: existing deployment state selects this
+same protected update path rather than first-install initialization.
+
+Before either operation, run the non-mutating prerequisite check when desired:
+
+```bash
+bash RUN_AFTER_UPLOAD.sh doctor
+```
+
+`doctor` does not install packages, create files, alter databases, or change
+services. The separate `post-upload-doctor` command remains a mutating verified
+update workflow and is named explicitly for that reason.
 
 The update verifies the exact uploaded source before mutation, quarantines only
 stale source selected by the previous direct-folder layout, stops SQLite

@@ -271,24 +271,89 @@ def test_launcher_repairs_access_storage_before_services_without_wiping_auth():
 def test_dashboard_code_and_bot_paths_prepare_shared_access_storage():
     text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
     code_body = text.split("generate_dashboard_code() {", 1)[1].split("\n}", 1)[0]
+    issue_body = text.split("issue_dashboard_code() {", 1)[1].split("\n}", 1)[0]
     bot_body = text.split("ensure_bot_service_running() {", 1)[1].split("\n}", 1)[0]
     restart_body = text.split("restart_bot_service() {", 1)[1].split("\n}", 1)[0]
 
-    assert "prepare_runtime_storage" in code_body
+    assert "issue_dashboard_code" in code_body
+    assert "prepare_runtime_storage" in issue_body
     assert "prepare_runtime_storage" in bot_body
     assert "prepare_runtime_storage" in restart_body
 
 
 def test_launcher_is_single_entrypoint_and_menu_failures_do_not_close_control_ui():
     text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
-    lock_call = text.rindex("\nacquire_control_lock\n")
-    dispatch = text.index('\ncmd="${1:-menu}"')
+    command_selection = text.index('\ncmd="${1:-menu}"')
+    lock_call = text.rindex("\n  acquire_control_lock\n")
+    dispatch = text.index('\ncase "$cmd" in')
 
-    assert lock_call < dispatch
+    assert command_selection < lock_call < dispatch
+    assert 'if [[ "$cmd" != "doctor" ]]' in text[command_selection:dispatch]
     assert "run_menu_action()" in text
     assert 'if ! ("$@"); then' in text
-    assert '1) run_menu_action "Safe install/update" safe_update' in text
+    assert '1) run_menu_action "Bootstrap" bootstrap' in text
+    assert '3) run_menu_action "Read-only doctor" doctor' in text
     assert "install_update_menu" not in text
+
+
+def test_launcher_bootstrap_is_non_destructive_and_auto_detects_existing_state():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    bootstrap = _launcher_function(text, "bootstrap")
+    first = _launcher_function(text, "bootstrap_first_install")
+    env_setup = _launcher_function(text, "ensure_bootstrap_env")
+
+    assert "bootstrap_has_existing_state" in bootstrap
+    assert bootstrap.index("require_python_312") < bootstrap.index("validated_update_preflight")
+    assert bootstrap.index("ensure_bootstrap_env") < bootstrap.index("validated_update_preflight")
+    assert "safe_update" in bootstrap
+    assert "bootstrap_first_install" in bootstrap
+    assert "fresh_first_install" not in bootstrap
+    assert "wipe_db" not in bootstrap
+    assert "install_or_update" in first
+    assert 'issue_dashboard_code "1h" "bootstrap_first_install"' in first
+    assert "wipe_db" not in first
+    assert 'install -m 0600 -- ".env.example" ".env"' in env_setup
+    assert '[[ -L ".env" ]]' in env_setup
+    assert "bootstrap|setup) bootstrap" in text
+
+
+def test_launcher_doctor_is_read_only_and_distinct_from_post_upload_update():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    doctor = text.split("\ndoctor() {", 1)[1].split("\n}", 1)[0]
+    database_checks = _launcher_function(text, "doctor_database_checks")
+
+    assert "--verify-source" in doctor
+    assert "PYTHONDONTWRITEBYTECODE=1" in doctor
+    assert "doctor_database_checks" in doctor
+    assert "systemctl is-active" in doctor
+    assert "?mode=ro" in database_checks
+    assert 'PRAGMA quick_check' in database_checks
+    for mutation in (
+        "ensure_venv", "prepare_runtime_storage", "set_env_key", "storage.init_db",
+        "apt-get", "systemctl start", "systemctl restart", "systemctl enable",
+        "systemctl disable", "rm -", "wipe_db", "install_or_update",
+    ):
+        assert mutation not in doctor
+        assert mutation not in database_checks
+    assert "doctor) doctor" in text
+    assert "post-upload-doctor) post_upload_doctor" in text
+    assert "post-upload-doctor|doctor" not in text
+
+
+def test_launcher_enforces_exact_python_312_and_rebuilds_wrong_virtualenv():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    selector = _launcher_function(text, "system_python_bin")
+    version_check = _launcher_function(text, "python_312_ready")
+    requirement = _launcher_function(text, "require_python_312")
+    ensure = _launcher_function(text, "ensure_venv")
+
+    assert "python3.12" in selector
+    assert "sys.version_info[:2] == (3, 12)" in version_check
+    assert "Python 3.12 is required" in requirement
+    assert 'system_py="$(require_python_312)"' in ensure
+    assert 'python_312_ready ".venv/bin/python"' in ensure
+    assert "python3.12-venv" in ensure
+    assert (ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.12"
 
 
 def test_launcher_proves_uploaded_source_before_any_update_mutation():

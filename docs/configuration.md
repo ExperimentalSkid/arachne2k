@@ -47,9 +47,12 @@ before adding a seed and `resume` only when ready.
 
 ```bash
 cd /root/arachne
-bash RUN_AFTER_UPLOAD.sh configure-env
+sudo bash RUN_AFTER_UPLOAD.sh bootstrap
 ```
 
+Bootstrap creates `.env` from safe defaults when it is absent and offers the
+optional Telegram configuration only on an interactive terminal. To edit an
+existing configuration directly, use `bash RUN_AFTER_UPLOAD.sh configure-env`.
 Blank answers preserve existing values. The launcher backs up an existing
 `.env` privately before editing, prints presence only, and enforces private
 ownership/mode. Validate without exposing values:

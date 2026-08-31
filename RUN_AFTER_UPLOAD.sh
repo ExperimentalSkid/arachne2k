@@ -12,6 +12,8 @@ umask 077
 #   bash RUN_AFTER_UPLOAD.sh menu
 #
 # Useful direct commands:
+#   bash RUN_AFTER_UPLOAD.sh bootstrap
+#   bash RUN_AFTER_UPLOAD.sh doctor
 #   bash RUN_AFTER_UPLOAD.sh install
 #   bash RUN_AFTER_UPLOAD.sh quick
 #   bash RUN_AFTER_UPLOAD.sh configure-env
@@ -129,6 +131,38 @@ require_project() {
 # Return the project virtual-environment Python path.
 python_bin() {
   printf '%s\n' ".venv/bin/python"
+}
+
+# Select the supported system Python, preferring its versioned executable.
+system_python_bin() {
+  if command -v python3.12 >/dev/null 2>&1; then
+    command -v python3.12
+  elif command -v python3 >/dev/null 2>&1; then
+    command -v python3
+  else
+    return 1
+  fi
+}
+
+# Return success only when the selected interpreter is exactly Python 3.12.
+python_312_ready() {
+  local py="${1:-}"
+  [[ -n "$py" && -x "$py" ]] || return 1
+  "$py" -c 'import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 1)'
+}
+
+# Require the production Python version before creating or replacing a virtualenv.
+require_python_312() {
+  local py actual
+  py="$(system_python_bin 2>/dev/null || true)"
+  if [[ -z "$py" ]]; then
+    die "Python 3.12 is required. Install python3.12 and python3.12-venv, then rerun."
+  fi
+  if ! python_312_ready "$py"; then
+    actual="$($py -c 'import sys; print(".".join(map(str, sys.version_info[:3])))' 2>/dev/null || printf 'unknown')"
+    die "Python 3.12 is required; selected $py reports $actual. Install python3.12 and python3.12-venv, then rerun."
+  fi
+  printf '%s\n' "$py"
 }
 
 # Select a Python runtime suitable for standard-library-only safety helpers.
@@ -546,22 +580,26 @@ control_overview() {
 # Create or refresh the project virtual environment from the pinned lock.
 ensure_venv() {
   log "Preparing Python virtual environment"
-  command -v python3 >/dev/null 2>&1 || die "python3 is not installed."
-  local created=0
+  local system_py created=0
+  system_py="$(require_python_312)"
   if [[ -d ".venv" && ! -x ".venv/bin/python" ]]; then
     warn "Existing .venv is incomplete; rebuilding only the disposable virtual environment."
     rm -rf -- ".venv"
   fi
+  if [[ -x ".venv/bin/python" ]] && ! python_312_ready ".venv/bin/python"; then
+    warn "Existing .venv does not use Python 3.12; rebuilding only the disposable virtual environment."
+    rm -rf -- ".venv"
+  fi
   if [[ ! -d ".venv" ]]; then
-    if ! python3 -m venv .venv; then
+    if ! "$system_py" -m venv .venv; then
       rm -rf .venv
       if command -v apt-get >/dev/null 2>&1 && [[ "$(id -u)" == "0" ]]; then
-        warn "python3 venv support is missing. Installing python3-venv/python3-full, then retrying."
+        warn "Python 3.12 venv support is missing. Installing python3.12-venv, then retrying."
         apt-get update
-        apt-get install -y python3-venv python3-full
-        python3 -m venv .venv || die "Could not create .venv after installing python3-venv."
+        apt-get install -y python3.12-venv
+        "$system_py" -m venv .venv || die "Could not create .venv after installing python3.12-venv."
       else
-        die "Could not create .venv. Install python3-venv/python3-full, then rerun."
+        die "Could not create .venv. Install python3.12-venv, then rerun."
       fi
     fi
     created=1
@@ -1301,20 +1339,198 @@ PY
   fi
 }
 
-# Generate one bounded one-time dashboard access code and enable the lock.
-generate_dashboard_code() {
+# Record one successful read-only doctor check.
+doctor_ok() {
+  printf '%sPASS%s  %s\n' "$GREEN" "$RESET" "$*"
+}
+
+# Record one non-blocking read-only doctor observation.
+doctor_warning() {
+  DOCTOR_WARNINGS=$((DOCTOR_WARNINGS + 1))
+  printf '%sWARN%s  %s\n' "$YELLOW" "$RESET" "$*"
+}
+
+# Record one failed read-only doctor check without stopping later checks.
+doctor_failure() {
+  DOCTOR_FAILURES=$((DOCTOR_FAILURES + 1))
+  printf '%sFAIL%s  %s\n' "$RED" "$RESET" "$*"
+}
+
+# Check existing SQLite files through read-only URI connections.
+doctor_database_checks() {
+  local py="$1"
+  "$py" - <<'PY'
+from pathlib import Path
+import os
+import sqlite3
+import sys
+
+names = ["messages.db", "arachne.db", "runtime/dashboard_access.db"]
+previous = os.getenv("ARACHNE_PREVIOUS_DB_FILE", "").strip()
+if previous:
+    names.append(previous)
+found = 0
+failed = 0
+for name in dict.fromkeys(names):
+    path = Path(name)
+    if not path.is_file():
+        continue
+    found += 1
+    try:
+        uri = path.resolve().as_uri() + "?mode=ro"
+        with sqlite3.connect(uri, uri=True, timeout=5) as connection:
+            result = connection.execute("PRAGMA quick_check").fetchone()[0]
+        print(f"      {name}: {result}")
+        if result != "ok":
+            failed += 1
+    except Exception as exc:
+        print(f"      {name}: ERROR {type(exc).__name__}")
+        failed += 1
+if not found:
+    print("      no database files yet")
+raise SystemExit(1 if failed else 0)
+PY
+}
+
+# Diagnose prerequisites and deployed state without writing files or changing services.
+doctor() {
+  log "Read-only installation doctor"
+  printf 'No packages, files, databases, services, or settings will be changed.\n\n'
+  DOCTOR_FAILURES=0
+  DOCTOR_WARNINGS=0
+
+  local required system_py actual mode owner available_kb installed_units=0 service
+  for required in requirements.txt requirements-lock.txt dashboard.py arachne.py \
+      RUN_AFTER_UPLOAD.sh SOURCE_MANIFEST.json; do
+    if [[ -f "$required" ]]; then
+      doctor_ok "Source file present: $required"
+    else
+      doctor_failure "Required source file missing: $required"
+    fi
+  done
+
+  system_py="$(system_python_bin 2>/dev/null || true)"
+  if [[ -n "$system_py" ]]; then
+    actual="$($system_py -c 'import sys; print(".".join(map(str, sys.version_info[:3])))' 2>/dev/null || printf 'unknown')"
+    if python_312_ready "$system_py"; then
+      doctor_ok "System Python is supported: $system_py ($actual)"
+    else
+      doctor_failure "Python 3.12 required; $system_py reports $actual"
+    fi
+  else
+    doctor_failure "Python 3.12 is not installed"
+  fi
+
+  if [[ -x ".venv/bin/python" ]]; then
+    if python_312_ready ".venv/bin/python"; then
+      doctor_ok "Virtual environment uses Python 3.12"
+    else
+      doctor_failure "Virtual environment uses the wrong Python version; bootstrap will rebuild it"
+    fi
+  else
+    doctor_warning "Virtual environment is not installed yet"
+  fi
+
+  if [[ -f ".env" ]]; then
+    mode="$(stat -c '%a' .env 2>/dev/null || printf 'unknown')"
+    owner="$(stat -c '%U:%G' .env 2>/dev/null || printf 'unknown')"
+    if [[ "$mode" == "600" && "$owner" == "root:root" ]]; then
+      doctor_ok ".env is private (mode 600, owner $owner)"
+    else
+      doctor_failure ".env must use mode 600 and owner root:root; current mode is $mode (owner $owner)"
+    fi
+  else
+    doctor_warning ".env is absent; bootstrap will create safe defaults"
+  fi
+
+  if [[ -n "$system_py" && -f "scripts/make_clean_release.py" ]]; then
+    if PYTHONDONTWRITEBYTECODE=1 "$system_py" scripts/make_clean_release.py --verify-source >/dev/null 2>&1; then
+      doctor_ok "Source manifest matches the selected deployment tree"
+    else
+      doctor_failure "Source manifest verification failed"
+    fi
+  else
+    doctor_failure "Source manifest could not be verified"
+  fi
+
+  available_kb="$(df -Pk "$PROJECT_DIR" 2>/dev/null | awk 'NR==2 {print $4}')"
+  if [[ "$available_kb" =~ ^[0-9]+$ ]]; then
+    if (( available_kb >= 1048576 )); then
+      doctor_ok "At least 1 GiB of project filesystem space is available"
+    else
+      doctor_warning "Less than 1 GiB of project filesystem space is available"
+    fi
+  else
+    doctor_warning "Available project filesystem space could not be determined"
+  fi
+
+  if command -v systemctl >/dev/null 2>&1; then
+    doctor_ok "systemd control is available"
+    for service in "${SERVICE_NAMES[@]}" "$MAINTENANCE_TIMER_NAME"; do
+      if systemctl cat "$service" >/dev/null 2>&1; then
+        installed_units=$((installed_units + 1))
+      fi
+    done
+    if (( installed_units > 0 )); then
+      doctor_ok "$installed_units canonical service unit(s) are installed"
+    else
+      doctor_warning "Arachne service units are not installed yet"
+    fi
+  else
+    doctor_failure "systemd is not available"
+  fi
+
+  if command -v tor >/dev/null 2>&1; then
+    doctor_ok "Tor executable is installed"
+    if command -v systemctl >/dev/null 2>&1 && \
+        (systemctl is-active --quiet tor.service || systemctl is-active --quiet tor@default.service); then
+      doctor_ok "Tor service is active"
+    else
+      doctor_warning "Tor is installed but its service is not currently active"
+    fi
+  else
+    doctor_warning "Tor is not installed yet; bootstrap can install it on Ubuntu"
+  fi
+
+  if [[ -n "$system_py" ]]; then
+    if doctor_database_checks "$system_py"; then
+      doctor_ok "Existing SQLite files passed read-only quick checks"
+    else
+      doctor_failure "One or more SQLite files failed read-only quick checks"
+    fi
+  else
+    doctor_warning "SQLite files were not checked because Python is unavailable"
+  fi
+
+  if [[ -x ".venv/bin/python" && -f ".env" ]]; then
+    if PYTHONDONTWRITEBYTECODE=1 telegram_config_ready; then
+      doctor_ok "Optional Telegram integration is completely configured"
+    else
+      doctor_warning "Telegram is incomplete; its bot service will remain disabled"
+    fi
+  fi
+
+  printf '\nDoctor summary: %s failure(s), %s warning(s).\n' "$DOCTOR_FAILURES" "$DOCTOR_WARNINGS"
+  if (( DOCTOR_FAILURES > 0 )); then
+    printf 'Fix the failed prerequisites, then rerun: bash RUN_AFTER_UPLOAD.sh doctor\n'
+    return 1
+  fi
+  printf 'No blocking prerequisite problems were found.\n'
+}
+
+# Generate one bounded one-time dashboard access code without prompting.
+issue_dashboard_code() {
+  local duration="${1:-1h}" source="${2:-server_control}"
   ensure_venv
   prepare_runtime_storage
-  local duration
-  read -r -p "Code duration in minutes, or use 1h/4h/etc [60]: " duration
-  duration="${duration:-1h}"
   set_env_key DASHBOARD_LOCK_ENABLED "true"
-  "$(python_bin)" - "$duration" <<'PY'
+  "$(python_bin)" - "$duration" "$source" <<'PY'
 import sys
 import re
 import dashboard_auth
 
 raw = (sys.argv[1] if len(sys.argv) > 1 else "1h").strip().lower()
+source = (sys.argv[2] if len(sys.argv) > 2 else "server_control").strip() or "server_control"
 match = re.fullmatch(r"(\d+)\s*([mhd]?)", raw)
 if not match:
     raise SystemExit("Invalid duration. Use examples like 15m, 1h, 4h, 24h.")
@@ -1322,8 +1538,8 @@ number = int(match.group(1))
 unit = match.group(2) or "m"
 seconds = number * {"m": 60, "h": 3600, "d": 86400}[unit]
 seconds = max(60, min(seconds, 7 * 24 * 3600))
-dashboard_auth.set_dashboard_lock_enabled(True, "server_control")
-result = dashboard_auth.generate_dashboard_code(seconds, "server_control")
+dashboard_auth.set_dashboard_lock_enabled(True, source)
+result = dashboard_auth.generate_dashboard_code(seconds, source)
 if not result.get("code"):
     raise SystemExit(result.get("error") or result.get("reason") or "code generation failed")
 print("")
@@ -1332,6 +1548,13 @@ print(f"One-time code: {result['code']}")
 print(f"Expires at:    {result['expires_at']}")
 print("")
 PY
+}
+
+# Prompt for a duration and issue one bounded dashboard access code.
+generate_dashboard_code() {
+  local duration
+  read -r -p "Code duration in minutes, or use 1h/4h/etc [60]: " duration
+  issue_dashboard_code "${duration:-1h}" "server_control"
 }
 
 # Run the fail-closed Tor and crawler OPSEC checks without starting a crawl.
@@ -1917,7 +2140,7 @@ deploy_proof_menu() {
     cat <<EOF
 1) Build clean verified handoff ZIP
 2) Safe update (prove source + restore point + update)
-3) Post-upload doctor (prove source, verify, bot, dashboard code)
+3) Post-upload verification (prove source, update, dashboard code)
 4) Strict handoff receipt for clean upload folder
 5) Server handoff validation (no proof rewrite; may prepare venv)
 6) Verify uploaded source manifest
@@ -2520,6 +2743,104 @@ PY
   ok "Post-upload doctor completed."
 }
 
+# Return success when databases or canonical units indicate an existing deployment.
+bootstrap_has_existing_state() {
+  local path service
+  for path in "${DB_FILES[@]}" "${AUTH_DB_FILES[@]}"; do
+    [[ -e "$path" ]] && return 0
+  done
+  if command -v systemctl >/dev/null 2>&1; then
+    for service in "${SERVICE_NAMES[@]}" "$MAINTENANCE_TIMER_NAME"; do
+      systemctl cat "$service" >/dev/null 2>&1 && return 0
+    done
+  fi
+  return 1
+}
+
+# Create or secure the private environment file while preserving existing values.
+ensure_bootstrap_env() {
+  [[ -L ".env" ]] && die ".env must be a private regular file, not a symbolic link."
+  if [[ ! -e ".env" ]]; then
+    [[ -f ".env.example" ]] || die ".env.example is missing; source release is incomplete."
+    install -m 0600 -- ".env.example" ".env"
+    ok "Created private .env with safe defaults; optional Telegram credentials remain blank."
+  elif [[ ! -f ".env" ]]; then
+    die ".env exists but is not a regular file."
+  else
+    ok "Preserving the existing private .env values."
+  fi
+  chown root:root -- "$PROJECT_DIR/.env"
+  chmod 0600 -- "$PROJECT_DIR/.env"
+}
+
+# Install a true zero-state deployment without invoking a destructive reset path.
+bootstrap_first_install() {
+  log "First installation detected"
+  printf 'No existing Arachne database or canonical service unit was found.\n'
+  printf 'The normal initialization path will be used; no reset or wipe command will run.\n'
+  trap 'recover_runtime_services_after_failure' ERR
+  install_or_update
+  trap 'recover_runtime_services_after_failure' ERR
+  "$(python_bin)" scripts/handoff_receipt.py --allow-runtime >/dev/null
+  trap - ERR
+  issue_dashboard_code "1h" "bootstrap_first_install"
+}
+
+# Print concise post-bootstrap access and next-step information.
+bootstrap_summary() {
+  local onion
+  onion="$(onion_hostname)"
+  log "Bootstrap summary"
+  if [[ -n "$onion" ]]; then
+    printf 'Dashboard: http://%s/\n' "$onion"
+  else
+    printf 'Dashboard: port 8501 on this server (run deploy-onion for a private onion URL)\n'
+  fi
+  if telegram_config_ready; then
+    printf 'Telegram:  configured; bot service is eligible to run\n'
+  else
+    printf 'Telegram:  not configured; bot service is stopped and disabled\n'
+  fi
+  printf 'Status:    bash RUN_AFTER_UPLOAD.sh status\n'
+  printf 'Doctor:    bash RUN_AFTER_UPLOAD.sh doctor\n'
+  printf 'Logs:      bash RUN_AFTER_UPLOAD.sh logs\n'
+}
+
+# Bootstrap a new host or safely update detected existing state with one command.
+bootstrap() {
+  require_project
+  require_root_for_systemd
+  local existing=0 answer=""
+  if bootstrap_has_existing_state; then
+    existing=1
+  fi
+
+  require_python_312 >/dev/null
+  ensure_bootstrap_env
+  validated_update_preflight
+
+  if ! telegram_config_ready; then
+    if [[ -t 0 ]]; then
+      read -r -p "Configure optional Telegram integration now? [y/N]: " answer || answer=""
+      case "${answer,,}" in
+        y|yes) configure_env ;;
+        *) warn "Telegram configuration skipped; only its bot service will remain disabled." ;;
+      esac
+    else
+      warn "Non-interactive bootstrap: optional Telegram configuration was skipped."
+    fi
+  fi
+
+  if [[ "$existing" -eq 1 ]]; then
+    log "Existing deployment state detected; using the restore-point-protected update path"
+    safe_update
+  else
+    bootstrap_first_install
+  fi
+  bootstrap_summary
+  ok "Bootstrap completed."
+}
+
 # Create a restore point and perform the complete manifest-proven update path.
 safe_update() {
   require_project
@@ -2686,6 +3007,8 @@ Usage:
 
 Commands:
   menu                  Interactive control menu. Default if no command is given.
+  bootstrap             First install or detected safe update with one guided command.
+  doctor                Read-only prerequisites/source/database/service diagnostics.
   install, update       Prove uploaded source, create restore point, then install/update.
   install-wipe          Wipe crawler DB first, then install/update.
   install-repair        Repair DB I/O first, then install/update.
@@ -2706,12 +3029,12 @@ Commands:
   verify-manifest       Verify the exact uploaded source set and hashes.
   build-release         Build and verify a source-only handoff ZIP outside the project.
   restore-point         Create backups/restore_TIMESTAMP with DB/config/control files.
-  post-upload-doctor    Verify upload, start bot, check dashboard, print test code.
+  post-upload-doctor    Verify upload, safely update, check dashboard, print test code.
   safe-update           Source proof + handoff verify + restore point + install/update.
   retire-previous-services
                         Stop/remove a previous service namespace supplied explicitly.
   validate              Compile, smoke tests, consistency checks, OPSEC audit.
-  restart               Restart dashboard/workers/bot services.
+  restart               Restart dashboard/workers and the bot only when configured.
   restart-dashboard     Restart only the dashboard service.
   restart-workers       Restart only the staged crawler workers.
   restart-bot           Validate settings and restart only the Telegram bot.
@@ -2755,29 +3078,33 @@ menu() {
     control_overview
     cat <<EOF
 ${BOLD}Main menu${RESET}
-  1) Safe install/update (recommended)
-  2) Quick update (skip tests)
-  3) Validate only
-  4) Access / network
-  5) Data / maintenance
-  6) Services / workers / logs
-  7) Deploy / proof
-  8) Full pytest suite
-  9) Recovery / reset
+  1) Bootstrap / guided install or update (recommended)
+  2) Safe update
+  3) Read-only doctor
+  4) Quick update (skip tests)
+  5) Validate only
+  6) Access / network
+  7) Data / maintenance
+  8) Services / workers / logs
+  9) Deploy / proof
+ 10) Full pytest suite
+ 11) Recovery / reset
 
   0) Exit
 EOF
     read -r -p "Choose: " choice
     case "$choice" in
-      1) run_menu_action "Safe install/update" safe_update ;;
-      2) run_menu_action "Quick update" quick_update ;;
-      3) run_menu_action "Validation" validate ;;
-      4) access_menu; continue ;;
-      5) data_menu; continue ;;
-      6) worker_menu; continue ;;
-      7) deploy_proof_menu; continue ;;
-      8) run_menu_action "Full test suite" run_full_tests ;;
-      9) recovery_menu; continue ;;
+      1) run_menu_action "Bootstrap" bootstrap ;;
+      2) run_menu_action "Safe update" safe_update ;;
+      3) run_menu_action "Read-only doctor" doctor ;;
+      4) run_menu_action "Quick update" quick_update ;;
+      5) run_menu_action "Validation" validate ;;
+      6) access_menu; continue ;;
+      7) data_menu; continue ;;
+      8) worker_menu; continue ;;
+      9) deploy_proof_menu; continue ;;
+      10) run_menu_action "Full test suite" run_full_tests ;;
+      11) recovery_menu; continue ;;
       0) exit 0 ;;
       *) warn "Unknown choice." ;;
     esac
@@ -2790,9 +3117,12 @@ if [[ "${ARACHNE_CONTROL_LIBRARY_ONLY:-0}" == "1" ]]; then
   return 0 2>/dev/null || exit 0
 fi
 
-acquire_control_lock
 cmd="${1:-menu}"
+if [[ "$cmd" != "doctor" ]]; then
+  acquire_control_lock
+fi
 case "$cmd" in
+  bootstrap|setup) bootstrap ;;
   install|update) safe_update ;;
   install-wipe|update-wipe|wipe-install) install_or_update_with_wipe ;;
   install-repair|update-repair|repair-install) install_or_update_with_repair ;;
@@ -2814,7 +3144,8 @@ case "$cmd" in
   verify-manifest|manifest-verify) verify_manifest ;;
   build-release|clean-release|handoff-zip) build_clean_release ;;
   restore-point) create_restore_point ;;
-  post-upload-doctor|doctor) post_upload_doctor ;;
+  doctor) doctor ;;
+  post-upload-doctor) post_upload_doctor ;;
   safe-update) safe_update ;;
   retire-previous-services) retire_previous_services ;;
   validate|check) validate ;;

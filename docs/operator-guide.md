@@ -7,6 +7,12 @@ cd /root/arachne
 bash RUN_AFTER_UPLOAD.sh
 ```
 
+For a first install or an update where automatic state detection is preferred:
+
+```bash
+sudo bash RUN_AFTER_UPLOAD.sh bootstrap
+```
+
 ## Daily checks
 
 1. Review the menu's dashboard, bot, staged-worker, maintenance, database, and
@@ -21,6 +27,7 @@ Equivalent read-only commands:
 
 ```bash
 bash RUN_AFTER_UPLOAD.sh status
+bash RUN_AFTER_UPLOAD.sh doctor
 bash RUN_AFTER_UPLOAD.sh db-info
 bash RUN_AFTER_UPLOAD.sh db-doctor
 bash RUN_AFTER_UPLOAD.sh logs
@@ -60,8 +67,9 @@ dedicated access database. Do not delete that database as a routine repair.
 - **Repair DB I/O state** stops writers, preserves data, and repairs known
   ownership/sidecar conditions.
 - **Reset crawler database** is destructive and requires exact confirmation.
-- **Fresh/First Install** also resets dashboard access state and is only for an
-  intentional zero-state launch.
+- **Fresh install/reset** also resets dashboard access state and is only for an
+  explicitly confirmed return to zero state; normal first installation uses
+  `bootstrap` and does not call it.
 
 See [Backup and recovery](backup-and-recovery.md) before a restore or reset.
 

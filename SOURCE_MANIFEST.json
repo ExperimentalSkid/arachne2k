@@ -71,14 +71,14 @@
       "sha256": "07ea0ba6a58265e7a24e510c3c5bb3ba8f7ee50a6cca6ed33ebbea491a3f1817"
     },
     {
-      "bytes": 3381,
+      "bytes": 3534,
       "path": "README.md",
-      "sha256": "8deb4c9546c6ddb2dfb3b9fa8d7bd49c5c668fae601f6ed5205b66a52a3eb060"
+      "sha256": "744a23f7dd0242a07a6344cbc1b97436b75c83dede5e2fc41785f289886308fe"
     },
     {
-      "bytes": 100761,
+      "bytes": 112392,
       "path": "RUN_AFTER_UPLOAD.sh",
-      "sha256": "03cb549ac5b67902e15485059a5745f9e558ec84459477d8dac99ab577becdc5"
+      "sha256": "ce5c18ce747370386e2c74a0a48d4aa05dc5e2766a906b9f14a2d9092860925b"
     },
     {
       "bytes": 1179,
@@ -376,19 +376,19 @@
       "sha256": "f9d926ff0702ab7a194e732b4bafce6549f7e61353432368817293ba6a721f03"
     },
     {
-      "bytes": 3263,
+      "bytes": 3496,
       "path": "docs/configuration.md",
-      "sha256": "ff2a23b98ea13104d121ff5440f2e4e6c262420253842881e4a5c661d9046d85"
+      "sha256": "176540e52e59ba11f6be4f8b37f9553937064df8051bd599f0f8be85f7bc6012"
     },
     {
-      "bytes": 5634,
+      "bytes": 6456,
       "path": "docs/deployment.md",
-      "sha256": "0bb304af0a97503c02d56de661e3185b911da57c32f109addf6cdea97f8f019b"
+      "sha256": "35f7b678d6626994eb35767c13d484ba1d829c19b29bc7161c2ead993bc4c870"
     },
     {
-      "bytes": 1679,
+      "bytes": 1682,
       "path": "docs/development.md",
-      "sha256": "bbc7d900a0574eb831ce352cbb00973fa1268ef68f20ca58819c2f730e296bd7"
+      "sha256": "1e6f7916ed89bf0b4786eb3c046881dce963a678f32bd02d34761974d52dd993"
     },
     {
       "bytes": 1742,
@@ -441,9 +441,9 @@
       "sha256": "4696339e8844a1e06cc568ede7efba5a4397cf7204ec9f1684e9ab876a765e01"
     },
     {
-      "bytes": 2749,
+      "bytes": 2993,
       "path": "docs/operator-guide.md",
-      "sha256": "176d869fa4b20bd4db5d7e9eabc866d97334bb8e64ea9bc90454db3de725afa2"
+      "sha256": "6cac6b6ed518b461cc2768b526d80f91d5c11502093ff4524ac5ce82650fa6de"
     },
     {
       "bytes": 2839,
@@ -931,9 +931,9 @@
       "sha256": "5b1d65cd456061973c2f5f9f2ce94001613c1d88d5633d5f9db7f5f02c3a689d"
     },
     {
-      "bytes": 33585,
+      "bytes": 36826,
       "path": "tests/test_deployment_readiness.py",
-      "sha256": "a0dd608a8dd01e9026bff630cea96213d1ceae3b90fb1fa7b697d4ac16ae8dd8"
+      "sha256": "3a3ad22e80dc0c012b0af76ba71c379b3b7461644da350e8b1f5aba567249371"
     },
     {
       "bytes": 12157,
@@ -1384,6 +1384,6 @@
   "project": "Arachne",
   "root_name": "arachne",
   "schema_version": 2,
-  "total_bytes": 4012448,
-  "tree_sha256": "9915aefcf5cf63e6e918b7251171800d82976f416ab01adcaf95c5d5f62463aa"
+  "total_bytes": 4028775,
+  "tree_sha256": "de488d4043e7c8e41685a71626df65d8adfd824569eeb137c7d941182db5bedb"
 }
