@@ -190,7 +190,7 @@ streamlit==1.62.0
     # via -r requirements.txt
 telethon==1.44.0
     # via -r requirements.txt
-tokenizers==0.22.2
+tokenizers==0.23.1
     # via transformers
 toml==0.10.2
     # via streamlit
