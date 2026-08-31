@@ -23,7 +23,7 @@
     {
       "bytes": 1232,
       "path": ".github/workflows/ci.yml",
-      "sha256": "a774db43d7c4f6edcab9b613a0670de1b69a7ed5cfd32d6dccac8a1724e4f248"
+      "sha256": "5c09a0c7a4b4d9352eac4a994e31b6c88e6625e86eef2365c8398598b3b3da1c"
     },
     {
       "bytes": 463,
@@ -1385,5 +1385,5 @@
   "root_name": "arachne",
   "schema_version": 2,
   "total_bytes": 4008398,
-  "tree_sha256": "d5f166b34a0369adfa4d1806d3e0b1b6217ba7802e55ba09d8776f759a1158b5"
+  "tree_sha256": "4873e72afb42e850dc5918f22160f3dd68961c0cf315dfcc7ea3ab5c5c0948c6"
 }
