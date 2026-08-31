@@ -51,6 +51,7 @@ def check_markdown_links(root: Path = ROOT) -> list[str]:
 
 
 def main() -> None:
+    """Validate the selected repository root and exit nonzero on bad links."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", nargs="?", type=Path, default=ROOT)
     options = parser.parse_args()

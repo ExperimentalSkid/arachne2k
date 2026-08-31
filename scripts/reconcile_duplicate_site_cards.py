@@ -13,6 +13,7 @@ import storage  # noqa: E402
 
 
 def main() -> None:
+    """Preview or apply bounded same-onion Site Card reconciliation."""
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--dry-run", action="store_true")

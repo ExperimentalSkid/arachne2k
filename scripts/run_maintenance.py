@@ -15,6 +15,7 @@ import storage  # noqa: E402
 
 
 def main() -> None:
+    """Run one explicitly selected maintenance task in dry-run or apply mode."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", required=True,
                         choices=("consistency", "site-card-rebuild", "taxonomy", "search-tags", "adult-cleanup",

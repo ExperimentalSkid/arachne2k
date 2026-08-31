@@ -3,7 +3,7 @@
     "contents_hashed": false,
     "included": false
   },
-  "file_count": 274,
+  "file_count": 275,
   "files": [
     {
       "bytes": 4885,
@@ -76,9 +76,9 @@
       "sha256": "8deb4c9546c6ddb2dfb3b9fa8d7bd49c5c668fae601f6ed5205b66a52a3eb060"
     },
     {
-      "bytes": 91373,
+      "bytes": 98747,
       "path": "RUN_AFTER_UPLOAD.sh",
-      "sha256": "2773ff965d0773296191d93458fda4cdb300cb36a46ddc6186f69ccf793a2509"
+      "sha256": "1a2b0aac8bc3de0fe553cf7e2cee6ba0aba3028868e93c0ce56bb3c5767057d7"
     },
     {
       "bytes": 1179,
@@ -136,9 +136,9 @@
       "sha256": "c9530295c1d4eb676ec26685ac3662f52eff64a334a43459ab93d535ef33533e"
     },
     {
-      "bytes": 5509,
+      "bytes": 5893,
       "path": "backup_service.py",
-      "sha256": "cb1c1bd9ee28797ef57b97541a927001b42ac1e8a1f334128a0305eb9375f6a4"
+      "sha256": "e40d6b4c99144f3fb4be3f9c83c8dd8ec13f7dd540dc2f38b4b8300afb1b75eb"
     },
     {
       "bytes": 3893,
@@ -426,9 +426,9 @@
       "sha256": "e3002af7c8c4d2bb34993120eeac63736511b4013ae112d39a36b0f702fa3a95"
     },
     {
-      "bytes": 5338,
+      "bytes": 5350,
       "path": "docs/launch-readiness/07-test-evidence.md",
-      "sha256": "0556807490321d2322b8dc8d86417c2af4ac43067adbbc2d4ce1c44058730b3f"
+      "sha256": "2b2a3e876a9d1164c42ad688f502da638cb496e101b7e3aba36d60b67ac5eae4"
     },
     {
       "bytes": 4311,
@@ -438,7 +438,7 @@
     {
       "bytes": 7169,
       "path": "docs/launch-readiness/09-final-report.md",
-      "sha256": "404f52bc8e674d771dd12f314ecd478a3d1ceeee6b17d4a6f2542c8dd71340d4"
+      "sha256": "4696339e8844a1e06cc568ede7efba5a4397cf7204ec9f1684e9ab876a765e01"
     },
     {
       "bytes": 2749,
@@ -636,29 +636,29 @@
       "sha256": "ca2b0de5a64b2c780d8d4129461e5106d8d1d0fc2ad55740e8bbc8c1a28f52de"
     },
     {
-      "bytes": 2836,
+      "bytes": 2997,
       "path": "scripts/backfill_site_identity.py",
-      "sha256": "e1af96fe5d1259a7fad75a8cb3162e53892a268de7bfef8850e1710ae9855e6c"
+      "sha256": "0de0ae5dbb846f132f678997aba5c39b7d6a479df5c6dad2e5b5a0e9a58cfb6b"
     },
     {
-      "bytes": 3476,
+      "bytes": 3554,
       "path": "scripts/backup_retention.py",
-      "sha256": "56f63919c620314de8742f6b73a3ac5f3de173dca983853bb09fffde1858309f"
+      "sha256": "28d063d42cf8dbfed61273c9592ce752f222addd1cdd0e1af08d202c79154cdb"
     },
     {
-      "bytes": 5667,
+      "bytes": 5831,
       "path": "scripts/backup_sqlite.py",
-      "sha256": "edae6846668be7d731e230382dd7a334e5a06d48d05bb93c4ac9cd7ecf89ce1b"
+      "sha256": "663722b9932e2a695f40396ea2868abf7b9d730433d3c15f943051488f054ff9"
     },
     {
-      "bytes": 2514,
+      "bytes": 2593,
       "path": "scripts/check_markdown_links.py",
-      "sha256": "51d9cc24fda4470e0b3ee11e9e203ebb39d3915b6381fa6964fe784161bc8738"
+      "sha256": "9527c07788543fe16cc1d81bb1d3e1dde5d420eadd2df71d44473889db86e95c"
     },
     {
-      "bytes": 1839,
+      "bytes": 1998,
       "path": "scripts/classification_quality_audit.py",
-      "sha256": "f50b5c340e89f978e4f990604af1c3f2744b5e52181d58d0e094fb2158b99dd9"
+      "sha256": "6206a3f9079aa82bb6aed016b240b7b6c2d5b8604912a55d1dec0e745ccfee7e"
     },
     {
       "bytes": 729,
@@ -666,9 +666,9 @@
       "sha256": "ee3f1098a334d10cc5e53c36d709d1ee73399a35dbabf4065966f8226c04143f"
     },
     {
-      "bytes": 1016,
+      "bytes": 1088,
       "path": "scripts/defer_deep_pagination.py",
-      "sha256": "ef3d495427c304d8d023f807a43ca8e2cb98b5cdebdfc4e1f63731d0c48dfebd"
+      "sha256": "81132c3e4a0646988d65a6e9fed1cc034bfff5a759c549172d5974245566ab85"
     },
     {
       "bytes": 532,
@@ -681,14 +681,14 @@
       "sha256": "d394f6a962412a1f572b0fb67392cb4e39f4da2722918976d71fa64ec8e33094"
     },
     {
-      "bytes": 8378,
+      "bytes": 9002,
       "path": "scripts/handoff_receipt.py",
-      "sha256": "5f02404389c3b52692381b4655b9d8dc5d32226598db47328d8085980b6bb3a5"
+      "sha256": "4ae8262c4c2527170bb15b295b9fa2ecdc0a1442ea2c3a3320ba9d4a7c41cc82"
     },
     {
-      "bytes": 23866,
+      "bytes": 24585,
       "path": "scripts/make_clean_release.py",
-      "sha256": "4b19767044679150c2154cb73b35d477cd71c14d32d4bf96a8b9990c2668f244"
+      "sha256": "c02d7ee1d1ffc4b083bea70813a1c576a9d0b027cccd35b8f560c7e96604a6f3"
     },
     {
       "bytes": 669,
@@ -706,9 +706,9 @@
       "sha256": "9c36bcf146db39b202f75b7923687e75279cd0d10155f753d6459c46f5335ef3"
     },
     {
-      "bytes": 774,
+      "bytes": 846,
       "path": "scripts/reconcile_duplicate_site_cards.py",
-      "sha256": "dc2d6d0437f5613aea7fdf3df7b89d566d8f3992bedad15d12d04fc63a935f9e"
+      "sha256": "bda9765c1cc895648822a2d4bb491906447336e7ec361f191831b9b36cb6f785"
     },
     {
       "bytes": 538,
@@ -716,14 +716,14 @@
       "sha256": "05ec95cdab541dc693a66f5412a36292df4bb667d8083dd82a86931c31244adb"
     },
     {
-      "bytes": 9388,
+      "bytes": 9700,
       "path": "scripts/restore_sqlite.py",
-      "sha256": "68689459173e1001bbc4ea7da48ab234185776c768c0c297c09809d83623fdc4"
+      "sha256": "2063f80661d7582f6ec5894a0cfd81f265e64800aa0949dd7b1c36f26d4f887c"
     },
     {
-      "bytes": 2451,
+      "bytes": 2532,
       "path": "scripts/run_maintenance.py",
-      "sha256": "2feb56c4f33928f8275daef5f5d498219993fa08eb5c0a4a22f405290b4095e3"
+      "sha256": "345e3d0ce6f25ae4aea7738b2d58a061373ff7c0fc519822fc068acf5adecfde"
     },
     {
       "bytes": 413,
@@ -1191,6 +1191,11 @@
       "sha256": "350feb061c1883e55b697913ce316c1f61726ae3a256689baa61bb92bd5ef20a"
     },
     {
+      "bytes": 1476,
+      "path": "tests/test_script_documentation.py",
+      "sha256": "0276d15bda1f452a1d7391f36afe8fb415ffae34d869773ee5a48d9275ec616e"
+    },
+    {
       "bytes": 1596,
       "path": "tests/test_secondary_page_pagination.py",
       "sha256": "61d65f8ebe8ff702dcb5c16f5d6f7b9abecb097ab34bd08fe43bb8fe8fe6803d"
@@ -1379,6 +1384,6 @@
   "project": "Arachne",
   "root_name": "arachne",
   "schema_version": 2,
-  "total_bytes": 3996631,
-  "tree_sha256": "bd3dee6ce7d691c398b2056c119118796797e9fc0f31036e836ac8be9cab344c"
+  "total_bytes": 4008398,
+  "tree_sha256": "d5f166b34a0369adfa4d1806d3e0b1b6217ba7802e55ba09d8776f759a1158b5"
 }

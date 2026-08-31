@@ -18,6 +18,7 @@ from site_identifier import identify_site
 
 
 def backfill(*, apply: bool = False, batch_size: int = 100) -> dict[str, int]:
+    """Scan Site Cards and optionally persist newly derived identity fields."""
     storage.init_db()
     stats = {"scanned": 0, "changed": 0}
     offset = 0
@@ -52,6 +53,7 @@ def backfill(*, apply: bool = False, batch_size: int = 100) -> dict[str, int]:
 
 
 def main() -> int:
+    """Parse CLI options, run the bounded backfill, and print JSON statistics."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true", help="write identity-only changes")
     parser.add_argument("--batch-size", type=int, default=100)
@@ -63,4 +65,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

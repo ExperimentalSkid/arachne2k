@@ -22,6 +22,7 @@ _BACKUP_PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")
 
 
 def _backup_patterns() -> tuple[str, ...]:
+    """Return deduplicated current and explicitly configured prior ZIP globs."""
     patterns = [BACKUP_PATTERN]
     previous_prefix = os.getenv("ARACHNE_PREVIOUS_BACKUP_PREFIX", "").strip()
     if previous_prefix:
@@ -32,11 +33,13 @@ def _backup_patterns() -> tuple[str, ...]:
 
 
 def _backup_paths() -> list[Path]:
+    """List recognized daily backups newest first across migration prefixes."""
     paths = {path for pattern in _backup_patterns() for path in BACKUPS_DIR.glob(pattern)}
     return sorted(paths, key=lambda path: path.stat().st_mtime, reverse=True)
 
 
 def _integrity(path: Path) -> bool:
+    """Return whether a SQLite file passes its full integrity check."""
     db = None
     try:
         db = sqlite3.connect(str(path))
@@ -49,6 +52,7 @@ def _integrity(path: Path) -> bool:
 
 
 def create_daily_backup(*, keep_days: int = 7, force: bool = False) -> dict:
+    """Create one verified daily ZIP and apply bounded archive retention."""
     BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(MADRID).date().isoformat()
     destination = BACKUPS_DIR / f"arachne-daily-{stamp}.zip"
@@ -95,6 +99,7 @@ def create_daily_backup(*, keep_days: int = 7, force: bool = False) -> dict:
 
 
 def list_backups() -> list[dict]:
+    """Return safe metadata for every recognized daily backup archive."""
     BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
     return [{"name": path.name, "path": str(path), "size_mb": round(path.stat().st_size / 1048576, 2),
              "modified": datetime.fromtimestamp(path.stat().st_mtime, MADRID).isoformat()}

@@ -45,6 +45,7 @@ class RestoreError(RuntimeError):
 
 
 def _sqlite_uri(path: Path) -> str:
+    """Build a read-only SQLite URI for an absolute database path."""
     return path.resolve().as_uri() + "?mode=ro"
 
 
@@ -94,6 +95,7 @@ def inspect_database(path: Path, schema: str) -> dict:
 
 
 def _temporary_path(parent: Path, name: str) -> Path:
+    """Reserve a unique same-filesystem staging path without leaving a file."""
     descriptor, raw = tempfile.mkstemp(
         prefix=f".{name}.", suffix=".restore.tmp", dir=parent
     )
@@ -130,6 +132,7 @@ def _publish_snapshot(source: Path, target: Path, schema: str) -> None:
 
 
 def _remove_stopped_writer_sidecars(target: Path) -> None:
+    """Remove WAL, SHM, and journal sidecars after all writers are stopped."""
     for suffix in SIDECAR_SUFFIXES:
         sidecar = target.with_name(target.name + suffix)
         if sidecar.exists():
@@ -225,6 +228,7 @@ def restore_database(
 
 
 def main() -> None:
+    """Validate CLI restore inputs, perform the restore, and print JSON output."""
     parser = argparse.ArgumentParser(
         description="Validate and atomically restore one Arachne SQLite backup"
     )

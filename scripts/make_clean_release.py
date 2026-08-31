@@ -78,6 +78,7 @@ def _has_scratch_part(relative: Path) -> bool:
 
 
 def _allowed(path: Path, root: Path = ROOT) -> bool:
+    """Return whether a regular file belongs in the source-only release set."""
     if not path.is_file() or path.is_symlink():
         return False
     try:
@@ -114,6 +115,7 @@ def release_files(root: Path = ROOT) -> list[Path]:
 
 
 def _manifest_entry(path: Path, root: Path) -> dict:
+    """Describe one selected source file with its relative path, size, and hash."""
     payload = path.read_bytes()
     return {
         "path": path.relative_to(root).as_posix(),
@@ -123,6 +125,7 @@ def _manifest_entry(path: Path, root: Path) -> dict:
 
 
 def _tree_digest(entries: Iterable[dict]) -> str:
+    """Hash the ordered manifest entries into one reproducible tree identity."""
     lines = [f"{item['sha256']}  {item['bytes']}  {item['path']}" for item in entries]
     return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
 
@@ -148,6 +151,7 @@ def build_source_manifest(root: Path = ROOT, *, files: list[Path] | None = None)
 
 
 def manifest_bytes(manifest: dict) -> bytes:
+    """Serialize a manifest as deterministic UTF-8 JSON with a final newline."""
     return (json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=True) + "\n").encode("utf-8")
 
 
@@ -175,6 +179,7 @@ def write_source_manifest(root: Path = ROOT, destination: Path | None = None) ->
 
 
 def _safe_manifest_path(value: object) -> str:
+    """Validate and normalize one repository-relative POSIX manifest path."""
     raw = str(value or "")
     if not raw or "\\" in raw or "\x00" in raw:
         raise ManifestValidationError(f"unsafe manifest path: {raw!r}")
@@ -248,6 +253,7 @@ def validate_manifest(manifest: object) -> dict:
 
 
 def load_manifest(path: Path) -> dict:
+    """Load a bounded UTF-8 manifest and validate its complete schema."""
     path = Path(path)
     try:
         payload = path.read_bytes()
@@ -386,6 +392,7 @@ def reconcile_source_extras(root: Path = ROOT, manifest_path: Path | None = None
 
 
 def _safe_archive_name(value: str) -> str:
+    """Validate one ZIP member name before archive verification or extraction."""
     if not value or "\\" in value or "\x00" in value:
         raise ManifestValidationError(f"unsafe archive path: {value!r}")
     path = PurePosixPath(value)
@@ -450,6 +457,7 @@ def verify_archive(path: Path) -> dict:
 
 
 def _zip_info(name: str) -> zipfile.ZipInfo:
+    """Create deterministic ZIP metadata for one source archive member."""
     info = zipfile.ZipInfo(name, RELEASE_TIMESTAMP)
     info.create_system = 3
     info.external_attr = 0o100644 << 16
@@ -494,6 +502,7 @@ def workspace_audit_notice(scan: dict) -> str:
 
 
 def main() -> None:
+    """Dispatch source verification, archive verification, audit, or build mode."""
     parser = argparse.ArgumentParser(description="Build or verify a deterministic source-only Arachne release ZIP")
     parser.add_argument("output", nargs="?", type=Path, default=DEFAULT_OUTPUT)
     verification = parser.add_mutually_exclusive_group()

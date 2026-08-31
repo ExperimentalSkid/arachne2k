@@ -80,13 +80,20 @@ else
   BOLD=""; DIM=""; RESET=""; BLUE=""; GREEN=""; YELLOW=""; RED=""; CYAN=""; GRAY=""
 fi
 
+# Print a visually distinct control-step heading.
 log() { printf '\n%s==>%s %s\n' "$BLUE" "$RESET" "$*"; }
+# Print a successful operation message.
 ok() { printf '%sOK:%s %s\n' "$GREEN" "$RESET" "$*"; }
+# Print a non-fatal warning to stderr.
 warn() { printf '\n%sWARN:%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
+# Print a fatal error and terminate the current command.
 die() { printf '\n%sERROR:%s %s\n' "$RED" "$RESET" "$*" >&2; exit 1; }
+# Print a menu separator using the active color mode.
 hr() { printf '%s\n' "${GRAY}------------------------------------------------------------${RESET}"; }
+# Pause an interactive menu until the operator presses Enter.
 pause_screen() { read -r -p "Press Enter to continue..." _; }
 
+# Run one menu command without terminating the parent menu on failure.
 run_menu_action() {
   local label="$1"
   shift
@@ -95,6 +102,7 @@ run_menu_action() {
   fi
 }
 
+# Acquire the singleton lock that prevents overlapping control operations.
 acquire_control_lock() {
   command -v flock >/dev/null 2>&1 || die "flock is required (normally provided by util-linux)."
   local lock_dir="/run/lock"
@@ -103,12 +111,14 @@ acquire_control_lock() {
   flock -n 9 || die "Another Arachne server-control process is already running. Wait for it to finish."
 }
 
+# Require root privileges before reading or changing systemd state.
 require_root_for_systemd() {
   if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
     die "Run as root on the server so systemd services can be installed/restarted."
   fi
 }
 
+# Verify that the current directory contains a complete deployable source tree.
 require_project() {
   [[ -f "requirements.txt" ]] || die "requirements.txt missing; are you in /root/arachne?"
   [[ -f "requirements-lock.txt" ]] || die "requirements-lock.txt missing; source release is incomplete."
@@ -116,10 +126,12 @@ require_project() {
   [[ -f "arachne.py" ]] || die "arachne.py missing; Telegram bot entrypoint is missing."
 }
 
+# Return the project virtual-environment Python path.
 python_bin() {
   printf '%s\n' ".venv/bin/python"
 }
 
+# Select a Python runtime suitable for standard-library-only safety helpers.
 stdlib_python_bin() {
   if [[ -x ".venv/bin/python" ]]; then
     printf '%s\n' ".venv/bin/python"
@@ -130,12 +142,14 @@ stdlib_python_bin() {
   fi
 }
 
+# Create one verified SQLite snapshot through the canonical Python helper.
 sqlite_snapshot() {
   local source="$1" target="$2" py
   py="$(stdlib_python_bin)"
   "$py" "$PROJECT_DIR/scripts/backup_sqlite.py" --db "$source" --output "$target"
 }
 
+# Apply bounded retention to one recognized backup artifact category.
 prune_backup_artifacts() {
   local kind="$1" py
   py="$(stdlib_python_bin)"
@@ -153,6 +167,7 @@ prune_backup_artifacts() {
   return 0
 }
 
+# Confirm that a target filesystem has enough room for the requested snapshots.
 backup_space_preflight() {
   local target_dir="$1" py
   shift
@@ -174,6 +189,7 @@ if free < required:
 PY
 }
 
+# Wait until a service has a live main PID for three consecutive checks.
 wait_service_stable() {
   local service="$1" consecutive=0 state pid
   for _ in $(seq 1 12); do
@@ -190,6 +206,7 @@ wait_service_stable() {
   return 1
 }
 
+# Wait for a systemd timer to reach the active state.
 wait_timer_active() {
   local timer="$1"
   for _ in $(seq 1 10); do
@@ -199,6 +216,7 @@ wait_timer_active() {
   return 1
 }
 
+# Restore the exact service and timer state captured before maintenance.
 restore_active_service_snapshot() {
   local timer_was_active="$1"
   shift
@@ -222,6 +240,7 @@ restore_active_service_snapshot() {
   fi
 }
 
+# Stop installed services and fail if any requested SQLite user remains active.
 stop_services_checked() {
   local services=("$@") installed=() failed=0 service load_state
   for service in "${services[@]}"; do
@@ -238,6 +257,7 @@ stop_services_checked() {
   [[ "$failed" -eq 0 ]]
 }
 
+# Return a compact systemd load/active state for one service.
 service_state() {
   local service="$1"
   if ! command -v systemctl >/dev/null 2>&1; then
@@ -254,6 +274,7 @@ service_state() {
   printf '%s' "${state:-unknown}"
 }
 
+# Render a color-aware status badge for a service state.
 state_badge() {
   case "$1" in
     active) printf '%sOK%s' "$GREEN" "$RESET" ;;
@@ -264,6 +285,7 @@ state_badge() {
   esac
 }
 
+# Report whether a named environment key has a non-empty private value.
 env_value_present() {
   local key="$1"
   [[ -f ".env" ]] || { printf 'missing'; return 0; }
@@ -274,6 +296,7 @@ env_value_present() {
   fi
 }
 
+# Read the deployed dashboard onion hostname without exposing other Tor state.
 onion_hostname() {
   local path="/var/lib/tor/arachne-dashboard/hostname"
   if [[ -s "$path" ]]; then
@@ -283,6 +306,7 @@ onion_hostname() {
   fi
 }
 
+# Print a compact list of recognized database files and sizes.
 db_info_line() {
   local found=0
   for db in "${DB_FILES[@]}"; do
@@ -294,6 +318,7 @@ db_info_line() {
   [[ "$found" -eq 1 ]] || printf 'none yet'
 }
 
+# Print a read-only queue and worker diagnostic without initializing storage.
 pipeline_diagnostic() {
   # Status must remain observational.  In particular, do not import storage
   # here: importing the runtime database layer can initialize/migrate SQLite.
@@ -319,6 +344,7 @@ import sqlite3
 
 
 def configured_value(key: str) -> str | None:
+    """Read one diagnostic setting from process environment or the private file."""
     value = os.environ.get(key)
     if value is not None:
         return value.strip().strip("'\"")
@@ -340,6 +366,7 @@ def configured_value(key: str) -> str | None:
 
 
 def boolean_label(raw: str | None) -> str:
+    """Render a configured boolean as a safe operator-facing status label."""
     if raw is None or not raw.strip():
         return "not configured"
     normalized = raw.strip().casefold()
@@ -351,6 +378,7 @@ def boolean_label(raw: str | None) -> str:
 
 
 def table_exists(db: sqlite3.Connection, name: str) -> bool:
+    """Return whether one diagnostic table exists without changing the schema."""
     return db.execute(
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)
     ).fetchone() is not None
@@ -358,6 +386,7 @@ def table_exists(db: sqlite3.Connection, name: str) -> bool:
 
 def grouped_statuses(db: sqlite3.Connection, table: str, column: str,
                      ordered: tuple[str, ...], aliases: dict[str, str]) -> str:
+    """Summarize bounded queue statuses using stable labels and aliases."""
     if not table_exists(db, table):
         return "unavailable (schema missing)"
     counts = Counter()
@@ -373,6 +402,7 @@ def grouped_statuses(db: sqlite3.Connection, table: str, column: str,
 
 
 def safe_error_type(value: object) -> str:
+    """Reduce an error value to a safe type label without leaking its message."""
     # Never print messages: they may contain URLs, tokens, page text, or paths.
     candidate = str(value or "").split(":", 1)[0].strip().rsplit(".", 1)[-1]
     if (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,79}", candidate)
@@ -467,6 +497,7 @@ PY
   return 0
 }
 
+# Render the interactive server-control banner.
 banner() {
   if [[ -t 1 ]]; then
     clear 2>/dev/null || true
@@ -478,6 +509,7 @@ banner() {
   printf '%sProject:%s %s\n' "$DIM" "$RESET" "$PROJECT_DIR"
 }
 
+# Display a concise, read-only overview for the main menu.
 control_overview() {
   banner
   printf '\n%sQuick status%s\n' "$BOLD" "$RESET"
@@ -511,6 +543,7 @@ control_overview() {
   hr
 }
 
+# Create or refresh the project virtual environment from the pinned lock.
 ensure_venv() {
   log "Preparing Python virtual environment"
   command -v python3 >/dev/null 2>&1 || die "python3 is not installed."
@@ -584,6 +617,7 @@ PY
   fi
 }
 
+# Create private runtime directories and repair ownership without deleting data.
 prepare_runtime_storage() {
   require_root_for_systemd
   local py path
@@ -677,6 +711,7 @@ PY
   ok "Runtime storage is writable; this preparation step removed no data or credentials."
 }
 
+# Install and start the required fail-closed Tor runtime when necessary.
 ensure_tor_runtime() {
   require_root_for_systemd
   if ! command -v tor >/dev/null 2>&1; then
@@ -698,6 +733,7 @@ ensure_tor_runtime() {
   fi
 }
 
+# List every known unit name for an explicitly supplied prior namespace.
 previous_service_units() {
   local prefix="$1" suffix
   for suffix in \
@@ -708,6 +744,7 @@ previous_service_units() {
   done
 }
 
+# Stop, disable, and remove only the validated prior service namespace.
 retire_previous_services() {
   local prefix="${ARACHNE_PREVIOUS_SERVICE_PREFIX:-}" unit unit_dir=/etc/systemd/system
   [[ -n "$prefix" ]] || die \
@@ -727,6 +764,7 @@ retire_previous_services() {
   ok "Previous service namespace retired: $prefix"
 }
 
+# Install canonical service definitions and retire explicitly requested old units.
 install_services() {
   require_root_for_systemd
   log "Installing staged systemd services"
@@ -742,6 +780,7 @@ install_services() {
   systemctl enable "$MAINTENANCE_TIMER_NAME"
 }
 
+# Write all canonical dashboard, worker, bot, and maintenance systemd units.
 write_systemd_units() {
   local unit_dir="/etc/systemd/system"
   local py="$PROJECT_DIR/.venv/bin/python"
@@ -1022,6 +1061,7 @@ EOF
     "$unit_dir/arachne-maintenance.timer"
 }
 
+# Compile the deployment-critical Python modules without starting the application.
 compile_check() {
   local py
   py="$(python_bin)"
@@ -1039,6 +1079,7 @@ compile_check() {
     config_loader.py screenshot_service.py site_dedupe.py
 }
 
+# Run the fast deployment smoke-test subset.
 run_tests() {
   local py
   py="$(python_bin)"
@@ -1050,6 +1091,7 @@ run_tests() {
   "$py" -m pytest -q
 }
 
+# Run the complete regression suite with bytecode generation disabled.
 run_full_tests() {
   ensure_venv
   (
@@ -1058,6 +1100,7 @@ run_full_tests() {
   )
 }
 
+# Execute offline launch checks that are safe during installation.
 deploy_smoke_checks() {
   local py
   py="$(python_bin)"
@@ -1076,6 +1119,7 @@ deploy_smoke_checks() {
     tests/test_dashboard_access_lock.py::test_telegram_code_path_uses_dedicated_auth_db_when_main_db_is_broken
 }
 
+# Return success when the main database already contains the canonical schema.
 main_db_ready() {
   local py
   py="$(python_bin)"
@@ -1088,6 +1132,7 @@ print("ok")
 PY
 }
 
+# Run read-only database and pipeline consistency diagnostics.
 consistency_checks() {
   local py
   py="$(python_bin)"
@@ -1103,6 +1148,7 @@ consistency_checks() {
   "$py" onion_worker.py --repair-link-list-frontier --dry-run
 }
 
+# Refresh bounded Site Card statistics through the maintenance helper.
 refresh_rollups() {
   local py
   py="$(python_bin)"
@@ -1120,6 +1166,7 @@ print(f"refreshed {len(ids)} site cards")
 PY
 }
 
+# Queue changed Site Cards for idempotent staged rollup processing.
 queue_dirty_rollups() {
   local py
   py="$(python_bin)"
@@ -1142,6 +1189,7 @@ print(f"queued {queued} changed Site Card rollup job(s)")
 PY
 }
 
+# Print table counts and recognized database file sizes.
 db_info() {
   log "Database summary"
   local py
@@ -1187,6 +1235,7 @@ PY
   fi
 }
 
+# Diagnose disk, permissions, SQLite integrity, and dashboard access storage.
 db_doctor() {
   log "Database doctor"
   printf 'Project: %s\n' "$PROJECT_DIR"
@@ -1246,6 +1295,7 @@ PY
   fi
 }
 
+# Generate one bounded one-time dashboard access code and enable the lock.
 generate_dashboard_code() {
   ensure_venv
   prepare_runtime_storage
@@ -1278,6 +1328,7 @@ print("")
 PY
 }
 
+# Run the fail-closed Tor and crawler OPSEC checks without starting a crawl.
 opsec_audit() {
   local py
   py="$(python_bin)"
@@ -1286,6 +1337,7 @@ opsec_audit() {
     "OPSEC audit failed. Confirm Tor SOCKS is reachable at the configured host/port; no crawler service was started."
 }
 
+# Restart every canonical service and re-enable the maintenance timer.
 restart_services() {
   require_root_for_systemd
   if [[ "${SKIP_RESTART:-0}" == "1" ]]; then
@@ -1306,6 +1358,7 @@ restart_services() {
   wait_timer_active "$MAINTENANCE_TIMER_NAME" || die "$MAINTENANCE_TIMER_NAME is not active."
 }
 
+# Restart the dashboard and staged workers without restarting the bot.
 restart_app_services() {
   require_root_for_systemd
   if [[ "${SKIP_RESTART:-0}" == "1" ]]; then
@@ -1326,6 +1379,7 @@ restart_app_services() {
   wait_timer_active "$MAINTENANCE_TIMER_NAME" || die "$MAINTENANCE_TIMER_NAME is not active."
 }
 
+# Restart only the staged crawler pipeline workers.
 restart_worker_services() {
   require_root_for_systemd
   if [[ "${SKIP_RESTART:-0}" == "1" ]]; then
@@ -1344,6 +1398,7 @@ restart_worker_services() {
   done
 }
 
+# Restart only the dashboard service after repairing its writable storage.
 restart_dashboard_only() {
   require_root_for_systemd
   if [[ "${SKIP_RESTART:-0}" == "1" ]]; then
@@ -1356,6 +1411,7 @@ restart_dashboard_only() {
   wait_service_stable arachne-dashboard.service || die "Dashboard did not remain active after restart."
 }
 
+# Validate Telegram credentials and normalize the authorized administrator keys.
 repair_telegram_env() {
   local py
   py="$(python_bin)"
@@ -1371,6 +1427,7 @@ raw = raw.lstrip("\ufeff")
 bad_ids = {"", "0", "12345", "6789", "67890"}
 
 def valid_id(value):
+    """Return whether a Telegram identifier has the accepted numeric shape."""
     return bool(re.fullmatch(r"-?\d{5,20}", str(value or "").strip()))
 
 values = {}
@@ -1382,6 +1439,7 @@ for line in raw.splitlines():
     values[key.strip()] = value.strip()
 
 def env_value(key):
+    """Read and unquote one Telegram setting from file or process environment."""
     if key in values:
         value = values[key]
     else:
@@ -1445,6 +1503,7 @@ PY
   chmod 0600 -- "$PROJECT_DIR/.env"
 }
 
+# Start the bot only when it is absent or inactive, then prove stability.
 ensure_bot_service_running() {
   require_root_for_systemd
   if [[ "${SKIP_RESTART:-0}" == "1" ]]; then
@@ -1470,6 +1529,7 @@ ensure_bot_service_running() {
   ok "Telegram bot start command completed and service is active."
 }
 
+# Validate configuration and deliberately restart the Telegram control bot.
 restart_bot_service() {
   require_root_for_systemd
   if [[ "${SKIP_RESTART:-0}" == "1" ]]; then
@@ -1489,6 +1549,7 @@ restart_bot_service() {
   ok "Telegram bot restarted with the uploaded code."
 }
 
+# Prepare an installation as needed and ensure the bot service is running.
 start_bot_command() {
   require_project
   require_root_for_systemd
@@ -1501,6 +1562,7 @@ start_bot_command() {
   ensure_bot_service_running
 }
 
+# Stop the dashboard, workers, and maintenance units while leaving the bot alone.
 stop_app_services() {
   require_root_for_systemd
   log "Stopping dashboard and workers only"
@@ -1508,6 +1570,7 @@ stop_app_services() {
     "${APP_SERVICE_NAMES[@]}" || die "Could not stop every app service safely."
 }
 
+# Restore the safest viable service state after an interrupted deploy operation.
 recover_runtime_services_after_failure() {
   if ! command -v systemctl >/dev/null 2>&1; then
     return 0
@@ -1529,6 +1592,7 @@ recover_runtime_services_after_failure() {
   systemctl --no-pager --full status "${SERVICE_NAMES[@]}" 2>/dev/null || true
 }
 
+# Stop every service and timer that can access Arachne runtime state.
 stop_all_services() {
   require_root_for_systemd
   log "Stopping all Arachne services, including Telegram bot"
@@ -1536,6 +1600,7 @@ stop_all_services() {
     "${SERVICE_NAMES[@]}" || die "Could not stop every Arachne service safely."
 }
 
+# Snapshot databases, remove stopped-writer sidecars, and reinitialize storage.
 repair_db_io() {
   require_root_for_systemd
   ensure_venv
@@ -1575,6 +1640,7 @@ PY
   ok "DB I/O repair routine completed."
 }
 
+# Repair dashboard access storage permissions and refresh active consumers.
 repair_access_storage() {
   require_project
   require_root_for_systemd
@@ -1603,17 +1669,20 @@ repair_access_storage() {
   ok "Dashboard access storage repaired and active access services refreshed."
 }
 
+# Show full systemd status for every canonical service and timer.
 show_status() {
   require_root_for_systemd
   log "Service status"
   systemctl --no-pager --full status "${SERVICE_NAMES[@]}" "$MAINTENANCE_TIMER_NAME" || true
 }
 
+# Show the concise overview followed by database table counts.
 compact_status() {
   control_overview
   db_info
 }
 
+# Let the operator select and view bounded recent systemd logs.
 show_logs() {
   require_root_for_systemd
   local service
@@ -1653,6 +1722,7 @@ EOF
   journalctl -u "$service" --no-pager -n "${LOG_LINES:-120}"
 }
 
+# Build a sanitized, bounded diagnostic archive for support review.
 build_diagnostic_bundle() {
   require_project
   ensure_venv
@@ -1667,6 +1737,7 @@ build_diagnostic_bundle() {
   printf 'It excludes raw URLs, page content, credentials, cookies, sessions, databases, and personal identifiers.\n'
 }
 
+# Run the bounded read-only public-alias quality audit.
 alias_quality_audit() {
   require_project
   ensure_venv
@@ -1679,6 +1750,7 @@ alias_quality_audit() {
   ok "Alias audit complete. No cleanup or analyst decision was applied."
 }
 
+# Present the database and maintenance submenu until the operator returns.
 data_menu() {
   while true; do
     banner
@@ -1713,6 +1785,7 @@ EOF
   done
 }
 
+# Present dashboard access-code and lock controls until the operator returns.
 access_menu() {
   while true; do
     banner
@@ -1743,6 +1816,7 @@ EOF
   done
 }
 
+# Present worker lifecycle and maintenance controls until the operator returns.
 worker_menu() {
   while true; do
     banner
@@ -1779,6 +1853,7 @@ EOF
   done
 }
 
+# Present deployment, manifest, validation, and evidence commands.
 deploy_proof_menu() {
   while true; do
     banner
@@ -1811,18 +1886,21 @@ EOF
   done
 }
 
+# Stop crawler workers and maintenance while keeping dashboard and bot available.
 pause_workers() {
   ensure_venv
   log "Pausing crawler workers"
   "$(python_bin)" onion_worker.py --pause
 }
 
+# Start crawler workers and maintenance after an intentional pause.
 resume_workers() {
   ensure_venv
   log "Resuming crawler workers"
   "$(python_bin)" onion_worker.py --resume
 }
 
+# Display the dashboard onion hostname and relevant Tor/systemd status.
 onion_status() {
   log "Dashboard onion status"
   local onion
@@ -1839,6 +1917,7 @@ onion_status() {
   fi
 }
 
+# Create verified snapshots of every existing recognized database.
 backup_db() {
   local stamp backup_dir copied failed db
   stamp="$(date -u +%Y%m%d_%H%M%S)"
@@ -1878,6 +1957,7 @@ backup_db() {
   fi
 }
 
+# Capture a pre-update database, configuration, and control-script restore point.
 create_restore_point() {
   local stamp restore_dir copied db
   stamp="$(date -u +%Y%m%d_%H%M%S)"
@@ -1918,6 +1998,7 @@ EOF
   printf '%s\n' "$restore_dir"
 }
 
+# Validate and atomically restore one selected database with rollback protection.
 restore_db() {
   require_project
   require_root_for_systemd
@@ -2035,6 +2116,7 @@ PY
   ok "Database restore completed and the pre-restore rollback snapshot was retained."
 }
 
+# Perform an explicitly confirmed zero-state database reset with a prior backup.
 wipe_db() {
   require_root_for_systemd
   ensure_venv
@@ -2103,6 +2185,7 @@ PY
   trap - ERR
 }
 
+# Insert or replace one private environment key without exposing its value.
 set_env_key() {
   local key="$1"
   local value="$2"
@@ -2132,6 +2215,7 @@ path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
 PY
 }
 
+# Interactively collect bounded server settings and write the private environment.
 configure_env() {
   require_root_for_systemd
   ensure_venv
@@ -2180,6 +2264,7 @@ configure_env() {
   ok ".env updated. Secret values were not printed."
 }
 
+# Configure and validate the Tor hidden service for the local dashboard.
 deploy_onion() {
   require_root_for_systemd
   ensure_venv
@@ -2261,6 +2346,7 @@ EOF
   fi
 }
 
+# Run compilation, tests, consistency, and OPSEC checks as one launch gate.
 validate() {
   require_project
   ensure_venv
@@ -2270,6 +2356,7 @@ validate() {
   opsec_audit
 }
 
+# Generate a strict redacted direct-folder handoff receipt.
 handoff_check() {
   require_project
   ensure_venv
@@ -2277,6 +2364,7 @@ handoff_check() {
   "$(python_bin)" scripts/handoff_receipt.py
 }
 
+# Verify source and handoff evidence before a server-side update.
 verify_handoff() {
   require_project
   ensure_venv
@@ -2286,6 +2374,7 @@ verify_handoff() {
   deploy_smoke_checks
 }
 
+# Regenerate the authoritative source manifest through the handoff helper.
 handoff_manifest() {
   require_project
   ensure_venv
@@ -2293,6 +2382,7 @@ handoff_manifest() {
   "$(python_bin)" scripts/handoff_receipt.py --manifest
 }
 
+# Verify that the live selected source exactly matches its committed manifest.
 verify_manifest() {
   require_project
   command -v python3 >/dev/null 2>&1 || die "python3 is required to verify the uploaded source."
@@ -2300,6 +2390,7 @@ verify_manifest() {
   python3 scripts/make_clean_release.py --verify-source
 }
 
+# Quarantine stale selected source files left by a direct-folder upload.
 reconcile_uploaded_source() {
   require_project
   command -v python3 >/dev/null 2>&1 || die "python3 is required to reconcile the uploaded source."
@@ -2307,6 +2398,7 @@ reconcile_uploaded_source() {
   python3 scripts/make_clean_release.py --reconcile-source
 }
 
+# Prove the uploaded source and handoff state before any update mutation.
 validated_update_preflight() {
   if [[ "$SOURCE_PREFLIGHT_COMPLETE" == "1" ]]; then
     ok "Uploaded source proof and deploy checks already passed in this control run."
@@ -2325,6 +2417,7 @@ validated_update_preflight() {
   SOURCE_PREFLIGHT_COMPLETE=1
 }
 
+# Build and verify a deterministic source-only ZIP outside the source tree.
 build_clean_release() {
   require_project
   command -v python3 >/dev/null 2>&1 || die "python3 is required to build a clean handoff ZIP."
@@ -2342,6 +2435,7 @@ build_clean_release() {
   printf 'Upload this ZIP contents. Do not upload the live project folder with .env, databases, sessions, logs, or backups.\n'
 }
 
+# Verify an upload, recover required services, and print operator next steps.
 post_upload_doctor() {
   require_project
   require_root_for_systemd
@@ -2371,6 +2465,7 @@ PY
   ok "Post-upload doctor completed."
 }
 
+# Create a restore point and perform the complete manifest-proven update path.
 safe_update() {
   require_project
   require_root_for_systemd
@@ -2387,6 +2482,7 @@ safe_update() {
   ok "Safe update complete. Latest receipt: $PROJECT_DIR/HANDOFF_RECEIPT.txt"
 }
 
+# Install dependencies, storage, units, checks, and services without wiping data.
 install_or_update() {
   trap 'recover_runtime_services_after_failure' ERR
   log "Arachne install/update"
@@ -2432,6 +2528,7 @@ install_or_update() {
   ok "Install/update complete."
 }
 
+# Offer guarded repair/reset choices after a failed normal installation.
 recovery_menu() {
   while true; do
     cat <<EOF
@@ -2468,6 +2565,7 @@ EOF
   done
 }
 
+# Run the standard non-destructive install/update path.
 quick_update() {
   (
     export SKIP_TESTS=1
@@ -2475,6 +2573,7 @@ quick_update() {
   )
 }
 
+# Enable the dashboard lock and issue an initial code after a fresh reset.
 enable_dashboard_lock_after_fresh_reset() {
   log "Enabling the dashboard access page for the fresh installation"
   "$(python_bin)" - <<'PY'
@@ -2488,6 +2587,7 @@ print("Dashboard access lock: enabled")
 PY
 }
 
+# Perform a confirmed fresh database reset followed by installation.
 install_or_update_with_wipe() {
   validated_update_preflight
   KEEP_SERVICES_STOPPED_AFTER_WIPE=1 wipe_db
@@ -2497,12 +2597,14 @@ install_or_update_with_wipe() {
   install_or_update
 }
 
+# Repair DB I/O state and then retry the standard installation.
 install_or_update_with_repair() {
   validated_update_preflight
   repair_db_io
   install_or_update
 }
 
+# Run the first-install workflow with explicit zero-state confirmation.
 fresh_first_install() {
   log "Fresh/First Install: reset crawler data + install"
   printf 'This intentionally starts Arachne crawler results and access-code state from zero, then runs install/update.\n'
@@ -2518,6 +2620,7 @@ fresh_first_install() {
     install_or_update_with_wipe
 }
 
+# Print all supported commands and bounded environment flags.
 print_usage() {
   cat <<'EOF'
 Usage:
@@ -2588,6 +2691,7 @@ Environment flags:
 EOF
 }
 
+# Run the top-level interactive server-control menu loop.
 menu() {
   while true; do
     control_overview

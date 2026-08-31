@@ -109,6 +109,7 @@ def snapshot_database(db_path: Path, target: Path) -> Path:
 
 
 def backup_database(db_path: Path, backup_dir: Path, *, keep: int = 14) -> Path:
+    """Create a timestamped SQLite snapshot and prune older matching snapshots."""
     backup_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
     target = backup_dir / f"{db_path.stem}_{timestamp}.db"
@@ -120,6 +121,7 @@ def backup_database(db_path: Path, backup_dir: Path, *, keep: int = 14) -> Path:
 
 
 def main() -> None:
+    """Create one requested SQLite snapshot and surface bounded CLI failures."""
     parser = argparse.ArgumentParser(description="Create a safe SQLite backup snapshot")
     parser.add_argument("--db", default=str(storage.DB_PATH), help="SQLite database path to back up")
     parser.add_argument("--backup-dir", default=str(BASE_DIR / "backups"), help="Directory for backup files")

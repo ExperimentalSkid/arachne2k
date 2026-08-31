@@ -82,7 +82,7 @@ The exact evidence is maintained in
 - source shell syntax: **4/4 passed**;
 - generated systemd unit syntax: **9/9 passed**.
 - final post-refinement full suite: **902 passed, 2 skipped**.
-- repository-audit full suite: **912 passed, 2 skipped**.
+- repository-audit full suite: **914 passed, 2 skipped**.
 
 The selector identifies the source files recorded in `SOURCE_MANIFEST.json`
 and selects no reference or runtime data. Exact final bytes and the source-tree hash are in the embedded

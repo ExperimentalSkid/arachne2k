@@ -16,6 +16,7 @@ import storage
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the read-only classification-audit command-line interface."""
     parser = argparse.ArgumentParser(
         description=(
             "Summarize destination-HTML classification outcomes and explicit "
@@ -33,6 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Generate the quality report and optionally store its sanitized aggregate."""
     args = build_parser().parse_args(argv)
     report = storage.get_classification_quality_report(days=args.days)
     if args.store_daily:

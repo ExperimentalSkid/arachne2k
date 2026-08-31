@@ -77,6 +77,7 @@ def prune_backup_artifacts(
 
 
 def main() -> None:
+    """Parse retention overrides and report the dry-run or applied result."""
     parser = argparse.ArgumentParser(
         description="Prune only recognized Arachne backup artifact directories"
     )

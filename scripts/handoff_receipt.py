@@ -48,10 +48,12 @@ REDACTED_ENV_KEYS = {
 
 
 def _utc_now() -> str:
+    """Return the current UTC timestamp in stable receipt format."""
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _env_map() -> dict[str, str]:
+    """Read the private environment file without exposing values in output."""
     env_path = ROOT / ".env"
     result: dict[str, str] = {}
     if not env_path.exists():
@@ -66,10 +68,12 @@ def _env_map() -> dict[str, str]:
 
 
 def _is_numeric(value: str | None) -> bool:
+    """Return whether a configured identifier is an optionally signed integer."""
     return bool(str(value or "").strip().lstrip("-").isdigit())
 
 
 def _runtime_findings() -> list[dict]:
+    """Find runtime/private artifacts that make a direct source handoff unsafe."""
     findings: list[dict] = []
     skip_descendants: set[Path] = set()
     for path in sorted(ROOT.rglob("*"), key=lambda item: item.as_posix()):
@@ -107,14 +111,17 @@ def _source_files() -> list[Path]:
 
 
 def build_manifest() -> dict:
+    """Build the authoritative source manifest in memory without writing it."""
     return build_source_manifest(ROOT)
 
 
 def write_manifest() -> dict:
+    """Atomically write the authoritative source manifest to the project root."""
     return write_source_manifest(ROOT, MANIFEST_PATH)
 
 
 def build_receipt(*, write_manifest_file: bool = True, allow_runtime: bool = False) -> tuple[str, dict]:
+    """Build a redacted handoff receipt and its machine-readable result."""
     env = _env_map()
     findings = _runtime_findings()
     manifest = write_manifest() if write_manifest_file else build_manifest()
@@ -184,6 +191,7 @@ def build_receipt(*, write_manifest_file: bool = True, allow_runtime: bool = Fal
 
 
 def main() -> None:
+    """Run manifest-only, receipt, or strict handoff-check CLI modes."""
     parser = argparse.ArgumentParser(description="Create a safe Arachne handoff receipt.")
     parser.add_argument("--manifest", action="store_true", help="Write SOURCE_MANIFEST.json only.")
     parser.add_argument("--check", action="store_true", help="Exit non-zero when direct-folder handoff is not clean.")

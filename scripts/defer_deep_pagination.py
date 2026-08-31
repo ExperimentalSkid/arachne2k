@@ -12,6 +12,7 @@ import storage  # noqa: E402
 
 
 def main() -> None:
+    """Preview, apply, or reverse bounded deep-pagination deferrals."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--threshold", type=int, default=10)
     parser.add_argument("--limit", type=int, default=1000)
