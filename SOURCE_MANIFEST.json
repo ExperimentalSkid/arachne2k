@@ -426,9 +426,9 @@
       "sha256": "e3002af7c8c4d2bb34993120eeac63736511b4013ae112d39a36b0f702fa3a95"
     },
     {
-      "bytes": 5329,
+      "bytes": 5338,
       "path": "docs/launch-readiness/07-test-evidence.md",
-      "sha256": "79ec2d0b4cde4a643db1a96a04db0a5b3e1bbd1c3498ce4b54e9a37b7abf11ad"
+      "sha256": "0556807490321d2322b8dc8d86417c2af4ac43067adbbc2d4ce1c44058730b3f"
     },
     {
       "bytes": 4311,
@@ -591,14 +591,14 @@
       "sha256": "8e72dfbc26e9a3cd031afa3ca51b22f2e09c5d3e45797b61df9038a6741cdc20"
     },
     {
-      "bytes": 3686,
+      "bytes": 4088,
       "path": "requirements-lock.txt",
-      "sha256": "871ae02e77fef4b620f18d58a9415cec01e5d62cc1bc215fb93f338a3292b173"
+      "sha256": "39036067c248ece892d86c5c9f314aaf623608b22543b8da65679ce1c0031b7a"
     },
     {
-      "bytes": 310,
+      "bytes": 309,
       "path": "requirements.txt",
-      "sha256": "5d8384b018e8ccbe1736448b42773fdf7ebc9a0281537c82488c29cf248bffad"
+      "sha256": "d036de60bdcf15753d604cf779600d0de94690171036440b3a0af446781888d5"
     },
     {
       "bytes": 8786,
@@ -1379,6 +1379,6 @@
   "project": "Arachne",
   "root_name": "arachne",
   "schema_version": 2,
-  "total_bytes": 3996221,
-  "tree_sha256": "90d39a79cace92639d80ed66045c00dd07eab111fcc50101a6060396c6458ff3"
+  "total_bytes": 3996631,
+  "tree_sha256": "bd3dee6ce7d691c398b2056c119118796797e9fc0f31036e836ac8be9cab344c"
 }

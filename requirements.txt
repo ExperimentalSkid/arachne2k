@@ -1,5 +1,5 @@
 telethon>=1.36,<2
-transformers>=4.40,<5
+transformers>=5.5,<6
 requests[socks]>=2.31,<3
 stem>=1.8,<2
 beautifulsoup4>=4.12,<5

@@ -13,7 +13,7 @@ configuration inventory, and staged forum parity correction.
 | Initial full-suite baseline | **850 passed, 1 skipped** | Baseline before productization |
 | Integrated full suite checkpoint | **885 passed, 2 skipped** | Completed before final language refinements |
 | Final post-refinement full suite | **902 passed, 2 skipped** | Frozen local source; 210.97 seconds |
-| Repository-audit full suite | **912 passed, 2 skipped** | Current source; 209.38 seconds |
+| Repository-audit full suite | **912 passed, 2 skipped** | Patched dependency lock; 230.59 seconds |
 | Focused post-integration regressions | **88 passed** | Completed changes only; not a substitute for the final full suite |
 | UX/product regressions | **117 passed** | Home, review, collections, Spain, cards, themes, permissions, and supporting workflows |
 | Bilingual route matrix | **38/38 passed** | English and Spanish route coverage |
