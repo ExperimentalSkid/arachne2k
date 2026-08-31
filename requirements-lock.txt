@@ -84,7 +84,7 @@ packaging==26.3
     #   pytest
     #   streamlit
     #   transformers
-pandas==2.3.3
+pandas==3.0.5
     # via
     #   -r requirements.txt
     #   streamlit
