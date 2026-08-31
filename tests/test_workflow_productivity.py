@@ -126,3 +126,27 @@ def test_daily_backup_does_not_create_an_empty_missing_database(tmp_path, monkey
         backup_service.create_daily_backup(force=True)
 
     assert not missing.exists()
+
+
+def test_previous_backup_prefix_is_supported_without_duplicate_patterns(tmp_path, monkeypatch):
+    backups = tmp_path / "backups"
+    backups.mkdir()
+    current = backups / "arachne-daily-2026-08-31.zip"
+    previous = backups / "previous-prefix-daily-2026-08-30.zip"
+    current.write_bytes(b"current")
+    previous.write_bytes(b"previous")
+    monkeypatch.setattr(backup_service, "BACKUPS_DIR", backups)
+    monkeypatch.setenv("ARACHNE_PREVIOUS_BACKUP_PREFIX", "previous-prefix")
+
+    assert backup_service._backup_patterns() == (
+        "arachne-daily-*.zip", "previous-prefix-daily-*.zip")
+    assert {item["name"] for item in backup_service.list_backups()} == {
+        current.name, previous.name}
+
+
+def test_previous_backup_prefix_rejects_paths(tmp_path, monkeypatch):
+    monkeypatch.setattr(backup_service, "BACKUPS_DIR", tmp_path)
+    monkeypatch.setenv("ARACHNE_PREVIOUS_BACKUP_PREFIX", "../unsafe")
+
+    with pytest.raises(ValueError, match="safe filename prefix"):
+        backup_service.list_backups()

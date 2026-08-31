@@ -3,15 +3,15 @@
 ## Preconditions
 
 - Ubuntu host with root access for systemd installation.
-- Python 3 with `venv` support.
+- Python 3.12 with `venv` support.
 - Tor available on the configured SOCKS endpoint.
 - Enough free space for the virtual environment, database, WAL growth, logs,
   and at least one verified database snapshot.
 - A private `.env` containing valid Telegram administrator configuration.
 - A source tree or archive that passes the authoritative manifest check.
 
-The product is Arachne. The existing `/root/arachne` directory and
-`arachne-*` systemd names are retained as compatibility identifiers.
+The product is Arachne. `/root/arachne` and the `arachne-*` systemd names are
+its canonical deployment namespace.
 
 ## Build a clean source release
 
@@ -47,6 +47,39 @@ analyst data.
 The worker services start after a successful install, but a fresh database has
 no crawl work until a starting onion is deliberately added. Use `pause` before
 adding the first seed if an explicit maintenance window is required.
+
+## One-time migration from a prior namespace
+
+If the server already runs this code under a different project or systemd
+prefix, take a verified source and database snapshot before changing anything.
+Then retire only the exact prior service namespace:
+
+```bash
+cd /root/arachne
+sudo ARACHNE_PREVIOUS_SERVICE_PREFIX='<exact-prior-prefix>' \
+  bash RUN_AFTER_UPLOAD.sh retire-previous-services
+```
+
+The prefix must be a simple systemd-safe name and cannot be `arachne`. The
+command stops, disables, and removes only the known service suffixes under that
+prefix. It does not delete project data.
+
+If a prior SQLite file used another safe basename, pass it explicitly during
+the migration run so snapshots, permission repair, diagnostics, and an
+intentional wipe include it:
+
+```bash
+sudo ARACHNE_PREVIOUS_DB_FILE='<prior-file>.db' \
+  bash RUN_AFTER_UPLOAD.sh safe-update
+```
+
+This does not silently merge or replace databases. The active crawler database
+is `messages.db`; migrate a differently named verified database with the
+controlled `restore-db main` workflow in
+[Backup and recovery](backup-and-recovery.md). If daily backup archives used a
+different prefix, set `ARACHNE_PREVIOUS_BACKUP_PREFIX` in the private `.env`
+until their retention window expires. Remove all three migration settings once
+the old namespace is no longer needed.
 
 ## Safe in-place update
 

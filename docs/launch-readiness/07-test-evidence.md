@@ -3,8 +3,8 @@
 ## Evidence status
 
 This record separates completed local release evidence from Ubuntu-host gates.
-The final post-refinement suite was run after the last language, responsive
-layout, and contrast fixes.
+The current full suite was run after the repository audit fixes, CI additions,
+configuration inventory, and staged forum parity correction.
 
 ## Recorded automated evidence
 
@@ -13,6 +13,7 @@ layout, and contrast fixes.
 | Initial full-suite baseline | **850 passed, 1 skipped** | Baseline before productization |
 | Integrated full suite checkpoint | **885 passed, 2 skipped** | Completed before final language refinements |
 | Final post-refinement full suite | **902 passed, 2 skipped** | Frozen local source; 210.97 seconds |
+| Repository-audit full suite | **912 passed, 2 skipped** | Current source; 209.38 seconds |
 | Focused post-integration regressions | **88 passed** | Completed changes only; not a substitute for the final full suite |
 | UX/product regressions | **117 passed** | Home, review, collections, Spain, cards, themes, permissions, and supporting workflows |
 | Bilingual route matrix | **38/38 passed** | English and Spanish route coverage |
@@ -29,7 +30,8 @@ the warnings were not unit-syntax failures.
 
 ## Packaging and privacy boundary
 
-The authoritative selector resolves to **266 files** and no selected
+The authoritative selector resolves to the file count recorded in
+`SOURCE_MANIFEST.json`, and no selected
 database, environment file, session, runtime directory, log, report, preview,
 backup, cache, virtual environment, or nested archive.
 

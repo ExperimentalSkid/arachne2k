@@ -114,6 +114,49 @@ def test_only_strong_forum_page_results_expand_budget():
     assert onion_worker._forum_relevance_trigger(f"http://{HOST}/", homepage)[0] is False
 
 
+def test_staged_verifier_expands_relevant_forum_budget_once(isolated_db, monkeypatch):
+    _store_threads(60)
+    url = f"http://{HOST}/thread/2"
+    html = """<html><head><title>Relevant public forum thread</title></head><body>
+    <article class="postbody"><p>Weapons vendor discussion and shipping details.</p></article>
+    <aside class="postprofile">Public seller profile</aside>
+    </body></html>"""
+    title, meta, visible, links, structure = onion_worker._parse(
+        html.encode("utf-8"), "text/html; charset=utf-8", url)
+    policy = {
+        **_forum_policy(),
+        "primary_category": "weapons_arms",
+        "category": "weapons_arms",
+        "content_category": "weapons_arms",
+        "page_type": "forum_thread",
+        "category_confidence": "high",
+        "card_ready": 1,
+    }
+    url_id = int(storage.get_onion_url_by_url(url)["id"])
+    storage.store_fetched_page_snapshot(
+        url_id, url, worker_id=None, response_status=200,
+        content_type="text/html; charset=utf-8",
+        headers={"Content-Type": "text/html; charset=utf-8"},
+        title=title, meta_text=meta, visible_text=visible,
+        link_records=links, page_structure=structure, pre_policy=policy,
+    )
+    monkeypatch.setattr(
+        onion_worker, "_classify_fetched_page", lambda *_args, **_kwargs: dict(policy))
+
+    assert onion_worker.verify_one("verify:forum-expansion") is True
+
+    with storage.get_db() as db:
+        admitted = db.execute("""SELECT COUNT(*) FROM onion_urls
+          WHERE source_type='forum_thread_hint' AND status!='deferred_forum_budget'""").fetchone()[0]
+        deferred = db.execute("""SELECT COUNT(*) FROM onion_urls
+          WHERE source_type='forum_thread_hint' AND status='deferred_forum_budget'""").fetchone()[0]
+        events = db.execute("""SELECT COUNT(*) FROM forum_expansion_events
+          WHERE onion_host=?""", (HOST,)).fetchone()[0]
+        permitted = db.execute("""SELECT permitted_thread_budget FROM forum_crawl_state
+          WHERE onion_host=?""", (HOST,)).fetchone()[0]
+    assert (admitted, deferred, events, permitted) == (50, 10, 1, 50)
+
+
 def test_forum_sections_do_not_consume_thread_budget(isolated_db):
     parent_id = storage.insert_or_update_onion_url(FORUM, HOST, status="crawled", policy=_forum_policy())
     records = [{"url": f"http://{HOST}/viewforum.php?f={index}", "anchor_text": f"Section {index}"}

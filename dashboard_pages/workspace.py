@@ -1110,7 +1110,7 @@ def _crawl_manager(st, query, pd) -> None:
                          _l(st, "scheduled circuit renewal needs server ControlPort setup",
                                 "la renovación programada necesita configurar ControlPort en el servidor"))
         st.success(_l(st, f"Tor isolation is ON — the crawler changes its isolated SOCKS identity about every {identity_minutes} minutes; ",
-                         f"El aislamiento de Tor está ACTIVO — el arachne cambia su identidad SOCKS aislada aproximadamente cada {identity_minutes} minutos; ") + rotation_text + ".")
+                         f"El aislamiento de Tor está ACTIVO — Arachne cambia su identidad SOCKS aislada aproximadamente cada {identity_minutes} minutos; ") + rotation_text + ".")
         st.caption(_l(st, "Rotation is applied only between queued pages. An active fetch is allowed to finish normally.",
                           "La rotación solo se aplica entre páginas de la cola. Una descarga activa termina con normalidad."))
     else:
@@ -4167,7 +4167,7 @@ def _control_center(st, query, pd) -> None:
                                  st, dashboard_auth.CAPABILITY_CRAWLER_MANAGE):
         storage.set_worker_paused(not paused)
         query.clear()
-        st.success(_l(st, "Crawler state updated.", "Estado del arachne actualizado."))
+        st.success(_l(st, "Crawler state updated.", "Estado de Arachne actualizado."))
         st.rerun()
 
     if action_cols[1].button(_l(st, "Create backup now", "Crear copia ahora"),
@@ -4344,7 +4344,7 @@ def _settings(st) -> None:
                           "Ajustes guardados. El trabajador los usará antes de la siguiente página."))
     _note(st, _l(st,
         "Use simple, bounded controls for crawler privacy and workload. Changes apply before the next queued page and never cancel the page currently being processed.",
-        "Usa controles sencillos y limitados para la privacidad y la carga del arachne. Los cambios se aplican antes de la siguiente página y nunca cancelan la página en curso."))
+        "Usa controles sencillos y limitados para la privacidad y la carga de Arachne. Los cambios se aplican antes de la siguiente página y nunca cancelan la página en curso."))
 
     with st.expander(_l(st, "OPSEC status", "Estado OPSEC"), expanded=False):
         _opsec_status_panel(st, compact=True)
@@ -4402,7 +4402,7 @@ def _settings(st) -> None:
          _l(st, "The local SOCKS connection used for onion requests.", "La conexión SOCKS local usada para peticiones onion.")),
         (_l(st, "Stream isolation", "Aislamiento de flujos"),
          _l(st, "Locked on", "Bloqueado y activo") if tor_policy["socks_isolation"] else _l(st, "Needs server setup", "Necesita configuración"),
-         _l(st, "Keeps crawler traffic in a separate Tor circuit group.", "Mantiene el tráfico del arachne en un grupo de circuitos separado.")),
+         _l(st, "Keeps crawler traffic in a separate Tor circuit group.", "Mantiene el tráfico de Arachne en un grupo de circuitos separado.")),
         (_l(st, "Circuit window", "Ventana de circuito"), f"{identity_minutes_now} min",
          _l(st, "The current page finishes before a due rotation is applied.", "La página actual termina antes de aplicar una rotación pendiente.")),
         (_l(st, "Scheduled renewal", "Renovación programada"),
@@ -4434,7 +4434,7 @@ def _settings(st) -> None:
     def closest_index(options: list[int], current: int) -> int:
         return min(range(len(options)), key=lambda index: abs(options[index] - current))
 
-    st.markdown("### " + _l(st, "2 · Change crawler settings", "2 · Cambiar ajustes del arachne"))
+    st.markdown("### " + _l(st, "2 · Change crawler settings", "2 · Cambiar ajustes de Arachne"))
     with st.form("safe-runtime-settings"):
         privacy_left, privacy_right = st.columns(2)
         with privacy_left:
@@ -4563,7 +4563,7 @@ def _settings(st) -> None:
                                                  daily_digest_telegram=digest_telegram)
             st.success(_l(st, "Notification choices saved.", "Notificaciones guardadas."))
     st.caption(_l(st, "Immediate: Spain Priority. Daily digest: crawler work, discoveries, changes, errors and ordinary categories.",
-                      "Inmediato: Prioridad España. Resumen diario: trabajo del arachne, descubrimientos, cambios, errores y categorías normales."))
+                      "Inmediato: Prioridad España. Resumen diario: trabajo de Arachne, descubrimientos, cambios, errores y categorías normales."))
 
     st.markdown("### " + _l(st, "4 · Rolling backups", "4 · Copias de seguridad rotativas"))
     st.caption(_l(st, "One integrity-checked backup per Madrid day is retained for seven days. Reports are included; regenerable screenshots are excluded.",
@@ -4644,7 +4644,7 @@ def _settings(st) -> None:
     ✓ No login, CAPTCHA handling, form submission or purchasing<br>✓ No archive, executable, video or document downloads<br>
     ✓ Restricted pages never receive screenshots, snippets or outbound expansion</div>""",
     """<div class="safe-note"><b>Siempre activo</b><br>
-    ✓ El arachne solo obtiene páginas onion; las consultas públicas exactas opcionales usan una lista separada exclusiva de Tor<br>✓ El contenido adulto y de abuso grave permanece filtrado<br>
+    ✓ Arachne solo obtiene páginas onion; las consultas públicas exactas opcionales usan una lista separada exclusiva de Tor<br>✓ El contenido adulto y de abuso grave permanece filtrado<br>
     ✓ Sin inicios de sesión, CAPTCHA, formularios ni compras<br>✓ Sin descargas de archivos, ejecutables, vídeos o documentos<br>
     ✓ Las páginas restringidas nunca generan capturas, fragmentos ni expansión de enlaces</div>"""), unsafe_allow_html=True)
     if not available:

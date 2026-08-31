@@ -61,6 +61,14 @@ MAINTENANCE_SERVICE_NAME=arachne-maintenance.service
 MAINTENANCE_TIMER_NAME=arachne-maintenance.timer
 
 DB_FILES=(messages.db arachne.db)
+PREVIOUS_DB_FILE="${ARACHNE_PREVIOUS_DB_FILE:-}"
+if [[ -n "$PREVIOUS_DB_FILE" ]]; then
+  if [[ ! "$PREVIOUS_DB_FILE" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*\.db$ ]]; then
+    printf 'Invalid ARACHNE_PREVIOUS_DB_FILE: use a database basename ending in .db\n' >&2
+    exit 2
+  fi
+  DB_FILES+=("$PREVIOUS_DB_FILE")
+fi
 AUTH_DB_FILES=(runtime/dashboard_access.db)
 SOURCE_PREFLIGHT_COMPLETE=0
 
@@ -103,6 +111,7 @@ require_root_for_systemd() {
 
 require_project() {
   [[ -f "requirements.txt" ]] || die "requirements.txt missing; are you in /root/arachne?"
+  [[ -f "requirements-lock.txt" ]] || die "requirements-lock.txt missing; source release is incomplete."
   [[ -f "dashboard.py" ]] || die "dashboard.py missing; upload/extract looks incomplete."
   [[ -f "arachne.py" ]] || die "arachne.py missing; Telegram bot entrypoint is missing."
 }
@@ -531,7 +540,7 @@ ensure_venv() {
   requirements_hash="$("$py" - <<'PY'
 from hashlib import sha256
 from pathlib import Path
-print(sha256(Path("requirements.txt").read_bytes()).hexdigest())
+print(sha256(Path("requirements-lock.txt").read_bytes()).hexdigest())
 PY
 )"
   installed_hash="$(cat "$stamp" 2>/dev/null || true)"
@@ -556,10 +565,10 @@ PY
         || "${FORCE_DEPENDENCY_INSTALL:-0}" == "1" ]]; then
     log "Installing/updating Python dependencies"
     "$py" -m pip install -q --upgrade pip
-    "$py" -m pip install -q -r requirements.txt
+    "$py" -m pip install -q -r requirements-lock.txt
     printf '%s\n' "$requirements_hash" > "$stamp"
   else
-    ok "Python dependencies already match requirements.txt."
+    ok "Python dependencies already match requirements-lock.txt."
   fi
   if [[ -f ".env" ]] && grep -Eqi '^[[:space:]]*ENABLE_PAGE_SCREENSHOTS[[:space:]]*=[[:space:]]*(1|true|yes|on)[[:space:]]*$' .env; then
     if ! "$py" - <<'PY'
@@ -613,6 +622,18 @@ prepare_runtime_storage() {
       chmod 0600 -- "$path"
     fi
   done
+  if [[ -n "$PREVIOUS_DB_FILE" ]]; then
+    for path in \
+      "$PROJECT_DIR/$PREVIOUS_DB_FILE" \
+      "$PROJECT_DIR/$PREVIOUS_DB_FILE-wal" \
+      "$PROJECT_DIR/$PREVIOUS_DB_FILE-shm" \
+      "$PROJECT_DIR/$PREVIOUS_DB_FILE-journal"; do
+      if [[ -e "$path" ]]; then
+        chown root:root -- "$path"
+        chmod 0600 -- "$path"
+      fi
+    done
+  fi
 
   local session_files=()
   shopt -s nullglob
@@ -677,9 +698,41 @@ ensure_tor_runtime() {
   fi
 }
 
+previous_service_units() {
+  local prefix="$1" suffix
+  for suffix in \
+    dashboard.service fetch-worker.service verify-worker.service card-worker.service \
+    deep-discovery-worker.service preview-worker.service bot.service \
+    maintenance.service maintenance.timer onion-worker.service; do
+    printf '%s-%s\n' "$prefix" "$suffix"
+  done
+}
+
+retire_previous_services() {
+  local prefix="${ARACHNE_PREVIOUS_SERVICE_PREFIX:-}" unit unit_dir=/etc/systemd/system
+  [[ -n "$prefix" ]] || die \
+    "Set ARACHNE_PREVIOUS_SERVICE_PREFIX to the exact prior systemd prefix."
+  [[ "$prefix" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]{0,79}$ ]] || die \
+    "ARACHNE_PREVIOUS_SERVICE_PREFIX contains unsupported characters."
+  [[ "$prefix" != "arachne" ]] || die \
+    "Refusing to retire the active Arachne service namespace."
+  require_root_for_systemd
+  log "Stopping and disabling the explicitly selected previous service namespace"
+  while IFS= read -r unit; do
+    systemctl disable --now "$unit" 2>/dev/null || true
+    rm -f -- "$unit_dir/$unit"
+    rm -rf -- "$unit_dir/$unit.d"
+  done < <(previous_service_units "$prefix")
+  systemctl daemon-reload
+  ok "Previous service namespace retired: $prefix"
+}
+
 install_services() {
   require_root_for_systemd
   log "Installing staged systemd services"
+  if [[ -n "${ARACHNE_PREVIOUS_SERVICE_PREFIX:-}" ]]; then
+    retire_previous_services
+  fi
   systemctl disable --now arachne-onion-worker.service 2>/dev/null || true
   rm -f /etc/systemd/system/arachne-onion-worker.service
   rm -rf /etc/systemd/system/arachne-onion-worker.service.d
@@ -1096,6 +1149,7 @@ db_info() {
   if [[ -x "$py" ]]; then
     "$py" - <<'PY'
 from pathlib import Path
+import os
 import sqlite3
 
 db_path = Path("messages.db")
@@ -1119,7 +1173,11 @@ if db_path.is_file():
         print(f"database summary unavailable: {type(exc).__name__}")
 else:
     print("database summary: no crawler DB yet")
-for name in ("messages.db", "arachne.db"):
+names = ["messages.db", "arachne.db"]
+previous = os.getenv("ARACHNE_PREVIOUS_DB_FILE", "").strip()
+if previous:
+    names.append(previous)
+for name in dict.fromkeys(names):
     path = Path(name)
     if path.exists():
         print(f"{name:16} {path.stat().st_size / 1024 / 1024:.2f} MB")
@@ -1138,6 +1196,9 @@ db_doctor() {
   df -i "$PROJECT_DIR" 2>/dev/null || true
   printf '\nDatabase files:\n'
   ls -lh messages.db* arachne.db* runtime/dashboard_access.db* 2>/dev/null || true
+  if [[ -n "$PREVIOUS_DB_FILE" ]]; then
+    ls -lh -- "$PREVIOUS_DB_FILE"* 2>/dev/null || true
+  fi
   printf '\nDirectory permissions:\n'
   ls -ld "$PROJECT_DIR" . runtime runtime/sessions reports reports/previews logs backups 2>/dev/null || true
 
@@ -1147,9 +1208,14 @@ db_doctor() {
     printf '\nSQLite checks:\n'
     "$py" - <<'PY'
 from pathlib import Path
+import os
 import sqlite3
 
-for name in ("messages.db", "arachne.db", "runtime/dashboard_access.db"):
+names = ["messages.db", "arachne.db", "runtime/dashboard_access.db"]
+previous = os.getenv("ARACHNE_PREVIOUS_DB_FILE", "").strip()
+if previous:
+    names.append(previous)
+for name in dict.fromkeys(names):
     path = Path(name)
     if not path.exists():
         print(f"{name}: missing")
@@ -1489,7 +1555,12 @@ repair_db_io() {
     restore_active_service_snapshot "$timer_was_active" "${previously_active[@]}" || true
     die "DB repair cancelled because a verified SQLite backup could not be created."
   fi
-  rm -f messages.db-wal messages.db-shm messages.db-journal arachne.db-wal arachne.db-shm arachne.db-journal
+  local repair_db sidecar
+  for repair_db in "${DB_FILES[@]}"; do
+    for sidecar in -wal -shm -journal; do
+      rm -f -- "${repair_db}${sidecar}"
+    done
+  done
   if ! "$(python_bin)" - <<'PY'
 import storage
 storage.init_db()
@@ -1982,10 +2053,10 @@ wipe_db() {
   printf 'Services that were running are started again after the fresh DB is initialized.\n'
   printf 'A backup is created first unless WIPE_DB_BACKUP=0.\n\n'
 
-  if [[ "${CONFIRM_WIPE_DB:-}" != "WIPE ARACHNE DB" && "${CONFIRM_WIPE_DB:-}" != "WIPE ARACHNE DB" ]]; then
+  if [[ "${CONFIRM_WIPE_DB:-}" != "WIPE ARACHNE DB" ]]; then
     printf 'Type exactly: WIPE ARACHNE DB\n'
     read -r confirmation
-    [[ "$confirmation" == "WIPE ARACHNE DB" || "$confirmation" == "WIPE ARACHNE DB" ]] || die "DB wipe cancelled."
+    [[ "$confirmation" == "WIPE ARACHNE DB" ]] || die "DB wipe cancelled."
   fi
 
   local previously_active=() service timer_was_active=0
@@ -2476,6 +2547,8 @@ Commands:
   restore-point         Create backups/restore_TIMESTAMP with DB/config/control files.
   post-upload-doctor    Verify upload, start bot, check dashboard, print test code.
   safe-update           Source proof + handoff verify + restore point + install/update.
+  retire-previous-services
+                        Stop/remove a previous service namespace supplied explicitly.
   validate              Compile, smoke tests, consistency checks, OPSEC audit.
   restart               Restart dashboard/workers/bot services.
   restart-dashboard     Restart only the dashboard service.
@@ -2500,6 +2573,9 @@ Environment flags:
   DIAGNOSTIC_HOURS=24   Diagnostic bundle window (1 to 168 hours).
   ALIAS_AUDIT_LIMIT=5000 Candidate audit row limit (1 to 50000).
   RELEASE_OUTPUT=/path  Optional output path for build-release (must be outside source).
+  ARACHNE_PREVIOUS_SERVICE_PREFIX=name  Prior systemd prefix to retire during migration.
+  ARACHNE_PREVIOUS_DB_FILE=name.db       Prior compatibility DB included in snapshots/wipes.
+  ARACHNE_PREVIOUS_BACKUP_PREFIX=name    Prior daily-backup prefix included in retention.
   CONFIRM_WIPE_DB="WIPE ARACHNE DB"     Non-interactive DB wipe confirmation.
   RESTORE_DB_KIND=main|access             Non-interactive restore target.
   RESTORE_DB_SOURCE=/path/to/snapshot.db  Non-interactive restore candidate.
@@ -2578,6 +2654,7 @@ case "$cmd" in
   restore-point) create_restore_point ;;
   post-upload-doctor|doctor) post_upload_doctor ;;
   safe-update) safe_update ;;
+  retire-previous-services) retire_previous_services ;;
   validate|check) validate ;;
   restart) restart_services ;;
   restart-dashboard) restart_dashboard_only ;;

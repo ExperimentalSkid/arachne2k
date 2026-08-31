@@ -39,6 +39,11 @@ def test_clean_release_is_source_only(tmp_path):
     lowered = [name.casefold() for name in names]
     required = {
         "arachne/.gitattributes",
+        "arachne/.github/workflows/ci.yml",
+        "arachne/.github/dependabot.yml",
+        "arachne/.python-version",
+        "arachne/LICENSE",
+        "arachne/requirements-lock.txt",
         "arachne/README.md",
         "arachne/AGENTS.md",
         "arachne/dashboard.py",
@@ -98,6 +103,33 @@ def test_clean_release_is_source_only(tmp_path):
     expected = {f"{ARCHIVE_ROOT}/{path}" for path in manifest_paths}
     expected.add(f"{ARCHIVE_ROOT}/{MANIFEST_NAME}")
     assert set(names) == expected
+
+
+def test_env_example_documents_every_literal_production_config_key():
+    getters = {"get_bool", "get_float", "get_int", "get_str"}
+    used: set[str] = set()
+    for source in release_files(ROOT):
+        relative = source.relative_to(ROOT)
+        if source.suffix != ".py" or relative.parts[0] == "tests":
+            continue
+        tree = ast.parse(source.read_text(encoding="utf-8-sig"), filename=str(source))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            function = node.func
+            name = function.id if isinstance(function, ast.Name) else (
+                function.attr if isinstance(function, ast.Attribute) else ""
+            )
+            first = node.args[0]
+            if name in getters and isinstance(first, ast.Constant) and isinstance(first.value, str):
+                used.add(first.value)
+
+    documented = {
+        line.split("=", 1)[0].strip()
+        for line in (ROOT / ".env.example").read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#") and "=" in line
+    }
+    assert used <= documented, f"undocumented configuration keys: {sorted(used - documented)}"
 
 
 def test_fresh_source_has_no_preconfigured_live_telegram_groups():

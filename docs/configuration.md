@@ -24,6 +24,8 @@ network endpoints, or unrestricted numeric values.
 - Crawler: enablement, delays, byte/link/page/depth budgets, trap limits, and
   forum budgets.
 - Preview: disabled-by-default capture flag and bounded dimensions/timeouts.
+- One-time migration: explicit prior service, database, and backup prefixes;
+  these remain blank during normal operation.
 
 ## Launch-safe defaults
 
@@ -57,6 +59,11 @@ Operational backup retention can be overridden for one launcher invocation with
 `ARACHNE_KEEP_DATABASE_ROLLBACKS`, `ARACHNE_KEEP_CONFIG_BACKUPS`, and
 `ARACHNE_KEEP_STALE_SOURCE_BACKUPS`. Values are bounded to 1–50; defaults are
 documented in [Backup and recovery](backup-and-recovery.md).
+
+`ARACHNE_PREVIOUS_SERVICE_PREFIX`, `ARACHNE_PREVIOUS_DB_FILE`, and
+`ARACHNE_PREVIOUS_BACKUP_PREFIX` are narrow transition controls, not permanent
+aliases. See the one-time migration section in [Deployment](deployment.md),
+use exact prior identifiers, and clear them after migration.
 
 See [Security](security.md) for secret handling and
 [Deployment](deployment.md) for first launch.

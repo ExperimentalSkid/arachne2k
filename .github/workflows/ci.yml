@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-lock.txt
+      - name: Validate dependencies and source links
+        run: |
+          python -m pip check
+          python scripts/check_markdown_links.py
+      - name: Validate shell and release boundaries
+        run: |
+          bash -n RUN_AFTER_UPLOAD.sh
+          bash -n ops/install_systemd.sh
+          bash -n scripts/clean_runtime_junk.sh
+          bash -n scripts/make_clean_release.sh
+          python scripts/make_clean_release.py --verify-source
+          python scripts/make_clean_release.py --audit-workspace --fail-on-dirty-workspace
+      - name: Run tests
+        run: python -m pytest -q

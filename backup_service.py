@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from datetime import datetime
 import json
+import os
 from pathlib import Path
+import re
 import shutil
 import sqlite3
 import tempfile
@@ -15,11 +17,22 @@ from paths import BACKUPS_DIR, DB_PATH, REPORTS_DIR
 
 MADRID = ZoneInfo("Europe/Madrid")
 RUNTIME_FILES = ("runtime_settings.json",)
-BACKUP_PATTERNS = ("arachne-daily-*.zip", "arachne-daily-*.zip")
+BACKUP_PATTERN = "arachne-daily-*.zip"
+_BACKUP_PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")
+
+
+def _backup_patterns() -> tuple[str, ...]:
+    patterns = [BACKUP_PATTERN]
+    previous_prefix = os.getenv("ARACHNE_PREVIOUS_BACKUP_PREFIX", "").strip()
+    if previous_prefix:
+        if not _BACKUP_PREFIX_RE.fullmatch(previous_prefix):
+            raise ValueError("ARACHNE_PREVIOUS_BACKUP_PREFIX must be a safe filename prefix")
+        patterns.append(f"{previous_prefix}-daily-*.zip")
+    return tuple(dict.fromkeys(patterns))
 
 
 def _backup_paths() -> list[Path]:
-    paths = {path for pattern in BACKUP_PATTERNS for path in BACKUPS_DIR.glob(pattern)}
+    paths = {path for pattern in _backup_patterns() for path in BACKUPS_DIR.glob(pattern)}
     return sorted(paths, key=lambda path: path.stat().st_mtime, reverse=True)
 
 

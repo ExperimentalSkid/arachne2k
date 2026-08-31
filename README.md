@@ -1,6 +1,6 @@
 # Arachne
 
-Arachne is a private, safety-bounded collection and analysis workspace for
+Arachne is an operator-controlled, safety-bounded collection and analysis workspace for
 mapping onion sites, reviewing Site Cards, following public identity signals,
 and prioritizing Spain-linked findings. Its staged pipeline separates network
 fetching, page verification, Site Card rollups, previews, and optional advisory
@@ -41,7 +41,7 @@ into the source tree.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-lock.txt
 python -m pytest -q
 ```
 
@@ -62,11 +62,12 @@ cd /root/arachne
 bash RUN_AFTER_UPLOAD.sh
 ```
 
-The legacy directory and systemd unit names retain `arachne` for deployment
-compatibility; the product name is Arachne. Use the guided menu for
-configuration, safe update, service control, diagnostics, backup, and explicit
-fresh install. Do not upload a live development folder. Build or verify a clean
-source release first.
+`/root/arachne` and the `arachne-*` systemd units are the canonical deployment
+namespace. Use the guided menu for configuration, safe update, service control,
+diagnostics, backup, and explicit fresh install. A one-time migration path for
+an installation using a different prior namespace is documented in
+[Deployment](docs/deployment.md). Do not upload a live development folder.
+Build or verify a clean source release first.
 
 See [Deployment](docs/deployment.md), [Operator guide](docs/operator-guide.md),
 and [Backup and recovery](docs/backup-and-recovery.md).
@@ -78,3 +79,7 @@ The staged launch record is under
 the extracted baseline separately from final validation so later fixes do not
 rewrite the original evidence.
 
+## License
+
+Copyright is retained by ExperimentalSkid. No permission to copy, modify, or
+redistribute this repository is granted; see [LICENSE](LICENSE).

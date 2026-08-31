@@ -149,6 +149,27 @@ def _forum_relevance_trigger(url: str, policy: dict) -> tuple[bool, str]:
     return False, "no_strong_relevance_trigger"
 
 
+def _expand_relevant_forum_thread(url: str, policy: dict) -> dict:
+    """Apply the bounded forum expansion side effect from every crawl path."""
+    triggered, reason = _forum_relevance_trigger(url, policy)
+    if not triggered:
+        return {
+            "triggered": False,
+            "reason": reason,
+            "expanded": 0,
+            "duplicate_trigger": 0,
+        }
+    expansion = storage.expand_deferred_forum_threads(
+        urlsplit(url).hostname or "", url, reason,
+        batch_size=get_int("ONION_FORUM_TRIGGER_EXPANSION_BATCH", 25),
+        max_limit=get_int("ONION_FORUM_MAX_THREAD_BUDGET", 100),
+    )
+    storage.insert_crawl_audit(
+        url, "forum_budget", "expanded" if expansion["expanded"] else "budget_raised",
+        f"{reason};permitted={expansion['permitted']};queued={expansion['expanded']}")
+    return {"triggered": True, "reason": reason, **expansion}
+
+
 def _adult_memory_policy() -> dict:
     return {
         "primary_category": "adult_filtered", "category": "adult_filtered",
@@ -1813,6 +1834,7 @@ def verify_one(worker_id: str | None = None) -> bool:
         storage.apply_onion_policy(
             url, policy, int(snapshot.get("response_status") or 0), checked=True,
             page_structure=page_structure)
+        _expand_relevant_forum_thread(url, policy)
         records_to_store = link_records
         classified_to_store = classified_outbound
         summary_to_store = outbound_preview
@@ -2396,16 +2418,7 @@ def _process_one_impl() -> bool:
             (not thin_content and policy["primary_category"] != "unknown")
             or policy.get("spain_priority") or indicators or exposures
         ))
-        forum_triggered, forum_trigger_reason = _forum_relevance_trigger(url, policy)
-        if forum_triggered:
-            expansion = storage.expand_deferred_forum_threads(
-                urlsplit(url).hostname or "", url, forum_trigger_reason,
-                batch_size=get_int("ONION_FORUM_TRIGGER_EXPANSION_BATCH", 25),
-                max_limit=get_int("ONION_FORUM_MAX_THREAD_BUDGET", 100),
-            )
-            storage.insert_crawl_audit(
-                url, "forum_budget", "expanded" if expansion["expanded"] else "budget_raised",
-                f"{forum_trigger_reason};permitted={expansion['permitted']};queued={expansion['expanded']}")
+        _expand_relevant_forum_thread(url, policy)
         if relevant and storage.is_onion_url_verified(url):
             hit_id = storage.insert_onion_hit(
                 url, display_title, policy["priority_score"], policy["risk_level"], reasons,

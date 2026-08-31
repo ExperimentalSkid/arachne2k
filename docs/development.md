@@ -2,7 +2,7 @@
 
 ## Supported shape
 
-Production targets Ubuntu with Python 3, Tor, systemd, and the native tools
+Production targets Ubuntu with Python 3.12, Tor, systemd, and the native tools
 required by optional Playwright/Tesseract features. Local development may run
 on Windows or Linux, but Linux-only service and Tor checks remain separate
 launch gates.
@@ -13,12 +13,21 @@ launch gates.
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-lock.txt
 ```
 
 Use a temporary `.env` with external networking, alerts, and preview capture
 disabled. Tests should obtain storage from the isolated database fixtures in
 `tests/conftest.py`.
+
+`requirements.txt` contains the reviewed direct dependency ranges;
+`requirements-lock.txt` pins the complete resolved environment used by CI and
+deployment. After intentionally changing a direct dependency, regenerate the
+lock, review it, and run the full suite:
+
+```bash
+pip-compile --strip-extras --output-file=requirements-lock.txt requirements.txt
+```
 
 ## Change workflow
 
@@ -37,4 +46,3 @@ lockfile.
 
 See [Testing](testing.md) and the concise durable rules in
 [`AGENTS.md`](../AGENTS.md).
-

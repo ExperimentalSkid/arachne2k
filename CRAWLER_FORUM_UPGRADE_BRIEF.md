@@ -10,9 +10,9 @@ This brief is the implementation contract distilled from the larger crawler prop
 - Atomic claims, stale-claim recovery, worker fencing, bounded reads, GET-only Tor transport, and per-card locking already exist and must be preserved.
 - The full regression baseline before this pass is 487 passing tests; Python compilation succeeds.
 - The current development database reports `integrity_check=ok` and no foreign-key violations.
-- The staged verifier does not currently run the legacy forum relevance/expansion path.
-- The staged verifier/card worker does not currently persist the dedicated Spain Priority hit/alert workflow.
-- Existing staged tests do not exercise those end-to-end side effects.
+- At baseline, the staged verifier did not run the forum relevance/expansion path; the staged verifier now invokes the shared bounded expansion helper.
+- At baseline, Spain Priority persistence was not proven end to end; the card worker now performs the authoritative, idempotent persistence step.
+- Staged regression tests now cover both side effects through the production worker paths.
 - Forum URL recognition is limited and does not provide a stable thread/page/post identity.
 - Response bytes are always decoded as UTF-8 with replacement.
 - Repeated links retain only the first occurrence, and link context is only the nearest preceding heading.

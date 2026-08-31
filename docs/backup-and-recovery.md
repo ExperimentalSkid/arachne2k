@@ -2,10 +2,12 @@
 
 ## What is backed up
 
-The launcher knows the main crawler database (`messages.db`, with legacy
-`arachne.db` compatibility) and the dashboard access database
-(`runtime/dashboard_access.db`). It uses SQLite's backup API rather than copying
-an open database file.
+The launcher knows the active crawler database (`messages.db`), the retained
+compatibility database name (`arachne.db`), and the dashboard access database
+(`runtime/dashboard_access.db`). During a one-time namespace migration, an
+additional safe database basename can be supplied with
+`ARACHNE_PREVIOUS_DB_FILE`. The launcher uses SQLite's backup API rather than
+copying an open database file.
 
 Create a manual verified snapshot:
 
@@ -28,6 +30,11 @@ artifacts:
 These defaults can be changed for one control run with the documented
 `ARACHNE_KEEP_*` environment flags. At least one recognized artifact is always
 retained. Unknown/operator-created backup directories are never pruned.
+
+If old daily archives used another safe filename prefix, set
+`ARACHNE_PREVIOUS_BACKUP_PREFIX` in the private `.env` during the transition.
+Retention then recognizes both prefixes without renaming or deleting unrelated
+archives. Remove the setting after the old archives have aged out.
 
 ## Recovery principles
 

@@ -32,14 +32,15 @@ MAX_MANIFEST_BYTES = 4 * 1024 * 1024
 MAX_SOURCE_FILE_BYTES = 64 * 1024 * 1024
 MAX_SOURCE_TOTAL_BYTES = 512 * 1024 * 1024
 ROOT_FILES = {
-    ".env.example", ".gitattributes", ".gitignore", "requirements.txt", "pytest.ini",
-    "RUN_AFTER_UPLOAD.sh",
+    ".env.example", ".gitattributes", ".gitignore", ".python-version", "LICENSE",
+    "requirements.txt", "requirements-lock.txt", "pytest.ini", "RUN_AFTER_UPLOAD.sh",
 }
 ROOT_SUFFIXES = {".py", ".json", ".md"}
 PRIVATE_OR_TRANSIENT_ROOT_FILES = {
     "config.json", "audit_checkpoint.md", "tmp_arachne_pdf_extract.txt",
 }
 TREE_RULES = {
+    ".github": {".yml", ".yaml"},
     "dashboard_pages": {".py"},
     "dashboard_services": {".py"},
     "docs": {".md"},
@@ -535,7 +536,7 @@ def main() -> None:
         print(json.dumps(scan, ensure_ascii=True, sort_keys=True))
         if fail_dirty and not scan["pass"]:
             raise SystemExit(2)
-        if audit_workspace and options.output == DEFAULT_OUTPUT and len(sys.argv) == 2:
+        if audit_workspace and options.output == DEFAULT_OUTPUT:
             return
     built, count = build_release(options.output)
     print(SOURCE_ONLY_NOTICE)

@@ -73,11 +73,11 @@ COPY = {
     "page_activity": {"en": "Daily activity", "es": "Actividad diaria"},
     "page_investigations": {"en": "Watchlist", "es": "Lista de seguimiento"},
     "quality_title": {"en": "Classification Quality Center", "es": "Centro de calidad de clasificación"},
-    "quality_intro": {"en": "See what the crawler decided, where it was unsure, how much of each site it covered, and what changed.", "es": "Consulta qué decidió el arachne, dónde tuvo dudas, cuánto cubrió de cada sitio y qué cambió."},
+    "quality_intro": {"en": "See what the crawler decided, where it was unsure, how much of each site it covered, and what changed.", "es": "Consulta qué decidió Arachne, dónde tuvo dudas, cuánto cubrió de cada sitio y qué cambió."},
     "quality_accepted": {"en": "Confident decisions", "es": "Decisiones fiables"},
     "quality_accepted_help": {"en": "Classifications supported strongly enough to use automatically.", "es": "Clasificaciones con pruebas suficientes para usarlas automáticamente."},
     "quality_unsure": {"en": "Needs a human", "es": "Necesita revisión"},
-    "quality_unsure_help": {"en": "The crawler kept a suggestion but refused to guess.", "es": "El arachne guardó una sugerencia, pero se negó a adivinar."},
+    "quality_unsure_help": {"en": "The crawler kept a suggestion but refused to guess.", "es": "Arachne guardó una sugerencia, pero se negó a adivinar."},
     "quality_corrections": {"en": "Corrections made", "es": "Correcciones hechas"},
     "quality_tab_decisions": {"en": "Classification", "es": "Clasificación"},
     "quality_tab_coverage": {"en": "Crawl coverage", "es": "Cobertura"},
@@ -756,7 +756,7 @@ def category_description(category: str | None, language: str = "en") -> str:
         CATEGORY_DESCRIPTIONS["forum_social"]: "Un foro, comunidad, índice de hilos o espacio social.",
         CATEGORY_DESCRIPTIONS["hosting_services"]: "Servicios de alojamiento, infraestructura u operación de sitios.",
     }
-    return translations.get(text, "Una etiqueta legible para el analista. No sustituye el riesgo ni las pruebas del arachne.")
+    return translations.get(text, "Una etiqueta legible para el analista. No sustituye el riesgo ni las pruebas de Arachne.")
 
 
 def value_label(value: str | None, language: str = "en") -> str:

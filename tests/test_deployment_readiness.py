@@ -64,6 +64,34 @@ def test_legacy_ops_systemd_installer_delegates_to_canonical_launcher():
     assert 'exec bash "$CONTROL_SCRIPT" install' in text
 
 
+def test_previous_service_namespace_requires_explicit_safe_prefix():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    retire = _launcher_function(text, "retire_previous_services")
+    install = _launcher_function(text, "install_services")
+    assert 'ARACHNE_PREVIOUS_SERVICE_PREFIX:-' in retire
+    assert '[[ "$prefix" != "arachne" ]]' in retire
+    assert 'systemctl disable --now "$unit"' in retire
+    assert 'rm -f -- "$unit_dir/$unit"' in retire
+    assert 'rm -rf -- "$unit_dir/$unit.d"' in retire
+    assert "previous_service_units \"$prefix\"" in retire
+    assert "retire_previous_services" in install
+    assert "retire-previous-services) retire_previous_services" in text
+
+
+def test_previous_database_filename_is_bounded_to_a_basename():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    assert 'PREVIOUS_DB_FILE="${ARACHNE_PREVIOUS_DB_FILE:-}"' in text
+    assert '^[A-Za-z0-9][A-Za-z0-9._-]*\\.db$' in text
+    assert 'DB_FILES+=("$PREVIOUS_DB_FILE")' in text
+
+
+def test_database_wipe_has_one_canonical_confirmation_phrase():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    wipe = _launcher_function(text, "wipe_db")
+    assert '!= "WIPE ARACHNE DB" &&' not in wipe
+    assert '== "WIPE ARACHNE DB" ||' not in wipe
+
+
 def test_launcher_stops_sqlite_writers_before_database_wide_checks():
     text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
     body = text.split("install_or_update() {", 1)[1].split("\n}", 1)[0]
@@ -456,6 +484,15 @@ def test_launcher_installs_and_compiles_entity_intelligence_runtime():
         "dashboard_pages/entity_intelligence.py",
     ):
         assert source in compile_body
+
+
+def test_launcher_installs_the_complete_dependency_lock():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    ensure_body = _launcher_function(text, "ensure_venv")
+
+    assert 'Path("requirements-lock.txt").read_bytes()' in ensure_body
+    assert 'pip install -q -r requirements-lock.txt' in ensure_body
+    assert (ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.12"
 
 
 def test_observability_defaults_are_bounded_and_documented():
