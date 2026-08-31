@@ -27,6 +27,11 @@ network endpoints, or unrestricted numeric values.
 - One-time migration: explicit prior service, database, and backup prefixes;
   these remain blank during normal operation.
 
+Telegram is optional. Unless its API ID, API hash, bot token, and at least one
+administrator ID are all present, the launcher keeps only
+`arachne-bot.service` stopped and disabled. Use `bot-start` after completing
+those values; other Arachne services do not depend on them.
+
 ## Launch-safe defaults
 
 The example configuration disables automatic Telegram alerts, clear-web fetch,

@@ -6,9 +6,9 @@
   "file_count": 275,
   "files": [
     {
-      "bytes": 4885,
+      "bytes": 4983,
       "path": ".env.example",
-      "sha256": "1b35ec4cd46dde171f9a797596e8ab2e67fba5d75147f2e526587ff82b11690a"
+      "sha256": "60a9639a64d1fc55ed4a09b6a7150c599a2530f303768154f092f6eaeaecf251"
     },
     {
       "bytes": 46,
@@ -76,9 +76,9 @@
       "sha256": "8deb4c9546c6ddb2dfb3b9fa8d7bd49c5c668fae601f6ed5205b66a52a3eb060"
     },
     {
-      "bytes": 98747,
+      "bytes": 100761,
       "path": "RUN_AFTER_UPLOAD.sh",
-      "sha256": "1a2b0aac8bc3de0fe553cf7e2cee6ba0aba3028868e93c0ce56bb3c5767057d7"
+      "sha256": "03cb549ac5b67902e15485059a5745f9e558ec84459477d8dac99ab577becdc5"
     },
     {
       "bytes": 1179,
@@ -376,14 +376,14 @@
       "sha256": "f9d926ff0702ab7a194e732b4bafce6549f7e61353432368817293ba6a721f03"
     },
     {
-      "bytes": 2988,
+      "bytes": 3263,
       "path": "docs/configuration.md",
-      "sha256": "a82ff425986bea75c5affa1b944e6b5d71513b3be43b937aee2f618ec2d66b83"
+      "sha256": "ff2a23b98ea13104d121ff5440f2e4e6c262420253842881e4a5c661d9046d85"
     },
     {
-      "bytes": 5271,
+      "bytes": 5634,
       "path": "docs/deployment.md",
-      "sha256": "7a69b8b5d0f49d3e41561ae7c1e5ee5e02ee19dd5729b8525a44d8940b82d576"
+      "sha256": "0bb304af0a97503c02d56de661e3185b911da57c32f109addf6cdea97f8f019b"
     },
     {
       "bytes": 1679,
@@ -931,9 +931,9 @@
       "sha256": "5b1d65cd456061973c2f5f9f2ce94001613c1d88d5633d5f9db7f5f02c3a689d"
     },
     {
-      "bytes": 32285,
+      "bytes": 33585,
       "path": "tests/test_deployment_readiness.py",
-      "sha256": "a7203ce2bb6de883fc1379c1b8ac5e0cbe6d325a68947dffa966aab53d5b5638"
+      "sha256": "a0dd608a8dd01e9026bff630cea96213d1ceae3b90fb1fa7b697d4ac16ae8dd8"
     },
     {
       "bytes": 12157,
@@ -1384,6 +1384,6 @@
   "project": "Arachne",
   "root_name": "arachne",
   "schema_version": 2,
-  "total_bytes": 4008398,
-  "tree_sha256": "4873e72afb42e850dc5918f22160f3dd68961c0cf315dfcc7ea3ab5c5c0948c6"
+  "total_bytes": 4012448,
+  "tree_sha256": "9915aefcf5cf63e6e918b7251171800d82976f416ab01adcaf95c5d5f62463aa"
 }

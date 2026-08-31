@@ -7,7 +7,7 @@
 - Tor available on the configured SOCKS endpoint.
 - Enough free space for the virtual environment, database, WAL growth, logs,
   and at least one verified database snapshot.
-- A private `.env` containing valid Telegram administrator configuration.
+- A private `.env`; Telegram administrator configuration is optional.
 - A source tree or archive that passes the authoritative manifest check.
 
 The product is Arachne. `/root/arachne` and the `arachne-*` systemd names are
@@ -43,6 +43,12 @@ bash RUN_AFTER_UPLOAD.sh status
 SQLite state. It preserves source, `.env`, Telegram credentials, Telegram
 sessions, and existing backups. Do not use it for an update that must preserve
 analyst data.
+
+Telegram is an optional integration. When its API ID, API hash, bot token, or
+administrator ID is absent, installation continues with `arachne-bot.service`
+stopped and disabled. The dashboard, crawler workers, and maintenance timer are
+unaffected. After completing the Telegram settings, run
+`bash RUN_AFTER_UPLOAD.sh bot-start` to validate them and enable the bot.
 
 The worker services start after a successful install, but a fresh database has
 no crawl work until a starting onion is deliberately added. Use `pause` before

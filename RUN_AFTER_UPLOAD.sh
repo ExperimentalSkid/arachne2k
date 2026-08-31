@@ -776,7 +776,13 @@ install_services() {
   rm -rf /etc/systemd/system/arachne-onion-worker.service.d
   write_systemd_units
   systemctl daemon-reload
-  systemctl enable "${SERVICE_NAMES[@]}"
+  systemctl enable "${APP_SERVICE_NAMES[@]}"
+  if telegram_config_ready; then
+    systemctl enable "$BOT_SERVICE_NAME"
+  else
+    systemctl disable --now "$BOT_SERVICE_NAME" 2>/dev/null || true
+    warn "Telegram is not configured; the optional bot service remains disabled."
+  fi
   systemctl enable "$MAINTENANCE_TIMER_NAME"
 }
 
@@ -1337,7 +1343,7 @@ opsec_audit() {
     "OPSEC audit failed. Confirm Tor SOCKS is reachable at the configured host/port; no crawler service was started."
 }
 
-# Restart every canonical service and re-enable the maintenance timer.
+# Restart the application plus the configured optional bot and maintenance timer.
 restart_services() {
   require_root_for_systemd
   if [[ "${SKIP_RESTART:-0}" == "1" ]]; then
@@ -1345,10 +1351,17 @@ restart_services() {
     return 0
   fi
   prepare_runtime_storage
+  local services=("${APP_SERVICE_NAMES[@]}") service
+  if telegram_config_ready; then
+    repair_telegram_env
+    services+=("$BOT_SERVICE_NAME")
+  else
+    systemctl disable --now "$BOT_SERVICE_NAME" 2>/dev/null || true
+    warn "Telegram is not configured; restarting Arachne without the optional bot."
+  fi
   log "Restarting services"
-  systemctl restart "${SERVICE_NAMES[@]}"
-  local service
-  for service in "${SERVICE_NAMES[@]}"; do
+  systemctl restart "${services[@]}"
+  for service in "${services[@]}"; do
     wait_service_stable "$service" || {
       systemctl --no-pager --full status "$service" || true
       die "$service did not remain active after restart."
@@ -1409,6 +1422,34 @@ restart_dashboard_only() {
   log "Restarting dashboard only"
   systemctl restart arachne-dashboard.service
   wait_service_stable arachne-dashboard.service || die "Dashboard did not remain active after restart."
+}
+
+# Return success only when the complete optional Telegram integration is configured.
+telegram_config_ready() {
+  local py
+  py="$(python_bin)"
+  "$py" - <<'PY'
+import re
+
+from config_loader import get_int, get_str
+
+
+def valid_admin(value):
+    """Return whether an administrator identifier has a safe Telegram shape."""
+    return bool(re.fullmatch(r"-?\d{5,20}", value)) and value not in {
+        "0", "12345", "6789", "67890"
+    }
+
+
+api_id = get_int("TELEGRAM_API_ID", 0)
+api_hash = (get_str("TELEGRAM_API_HASH", "") or "").strip()
+token = (get_str("TELEGRAM_BOT_TOKEN", "") or get_str("BOT_TOKEN", "") or "").strip()
+raw_admins = " ".join(
+    filter(None, [get_str("TELEGRAM_ADMIN_IDS", ""), get_str("ADMIN_CHAT_ID", "")])
+)
+admins = [part for part in re.split(r"[,; ]+", raw_admins) if valid_admin(part)]
+raise SystemExit(0 if api_id > 0 and api_hash and token and admins else 1)
+PY
 }
 
 # Validate Telegram credentials and normalize the authorized administrator keys.
@@ -1503,6 +1544,16 @@ PY
   chmod 0600 -- "$PROJECT_DIR/.env"
 }
 
+# Restart the optional bot when configured, or keep its unit stopped and disabled.
+restart_bot_if_configured() {
+  if telegram_config_ready; then
+    restart_bot_service
+  else
+    systemctl disable --now "$BOT_SERVICE_NAME" 2>/dev/null || true
+    warn "Telegram is not configured; the optional bot was not started."
+  fi
+}
+
 # Start the bot only when it is absent or inactive, then prove stability.
 ensure_bot_service_running() {
   require_root_for_systemd
@@ -1586,8 +1637,12 @@ recover_runtime_services_after_failure() {
         "${WORKER_SERVICE_NAMES[@]}" >/dev/null 2>&1 || true
       systemctl restart arachne-dashboard.service >/dev/null 2>&1 || true
     fi
-    systemctl enable "$BOT_SERVICE_NAME" >/dev/null 2>&1 || true
-    systemctl start "$BOT_SERVICE_NAME" >/dev/null 2>&1 || true
+    if telegram_config_ready; then
+      systemctl enable "$BOT_SERVICE_NAME" >/dev/null 2>&1 || true
+      systemctl start "$BOT_SERVICE_NAME" >/dev/null 2>&1 || true
+    else
+      systemctl disable --now "$BOT_SERVICE_NAME" >/dev/null 2>&1 || true
+    fi
   fi
   systemctl --no-pager --full status "${SERVICE_NAMES[@]}" 2>/dev/null || true
 }
@@ -2491,9 +2546,13 @@ install_or_update() {
   require_root_for_systemd
   ensure_venv
   [[ -f ".env" ]] || die ".env is missing. Run: bash RUN_AFTER_UPLOAD.sh configure-env, then rerun install."
-  # Validate mandatory control-plane credentials and Tor before stopping any
-  # healthy service or beginning a database update.
-  repair_telegram_env
+  # Telegram is optional. Normalize complete credentials, but leave its unit
+  # disabled when any required Telegram setting is absent.
+  if telegram_config_ready; then
+    repair_telegram_env
+  else
+    warn "Telegram credentials are incomplete; installing without the optional bot service."
+  fi
   ensure_tor_runtime
   # Prevent a scheduled global maintenance job from starting halfway through
   # migrations/rollups. Recovery or the healthy restart re-enables the timer.
@@ -2510,7 +2569,7 @@ install_or_update() {
     systemctl stop "$MAINTENANCE_TIMER_NAME" "$MAINTENANCE_SERVICE_NAME" \
       "${WORKER_SERVICE_NAMES[@]}" >/dev/null 2>&1 || true
     restart_dashboard_only
-    restart_bot_service
+    restart_bot_if_configured
     show_status
     warn "Install/update completed code setup, but crawler DB is unhealthy so workers were not restarted."
     warn "Fix DB with db-doctor or wipe-db, then run install/update again."
@@ -2614,7 +2673,6 @@ fresh_first_install() {
   require_root_for_systemd
   validated_update_preflight
   [[ -f ".env" ]] || die ".env is missing. Run: bash RUN_AFTER_UPLOAD.sh configure-env"
-  repair_telegram_env
   ensure_tor_runtime
   ENABLE_DASHBOARD_LOCK_AFTER_WIPE=1 WIPE_ACCESS_DB=1 WIPE_DB_BACKUP=0 \
     install_or_update_with_wipe

@@ -226,18 +226,27 @@ def test_launcher_recovers_runtime_services_when_update_fails():
     assert "recover_runtime_services_after_failure()" in text
     assert "systemctl restart \"${APP_SERVICE_NAMES[@]}\"" in text
     assert "systemctl start \"$BOT_SERVICE_NAME\"" in text
+    recovery = text.split("recover_runtime_services_after_failure() {", 1)[1].split("\n}", 1)[0]
+    assert "if telegram_config_ready" in recovery
+    assert 'disable --now "$BOT_SERVICE_NAME"' in recovery
     install_body = text.split("install_or_update() {", 1)[1].split("\n}", 1)[0]
     safe_body = text.split("safe_update() {", 1)[1].split("\n}", 1)[0]
     assert "trap 'recover_runtime_services_after_failure' ERR" in install_body
     assert "trap 'recover_runtime_services_after_failure' ERR" in safe_body
 
 
-def test_launcher_restarts_bot_after_install_so_uploaded_callbacks_are_live():
+def test_launcher_restarts_bot_after_install_only_when_configured():
     text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
     install_body = text.split("install_or_update() {", 1)[1].split("\n}", 1)[0]
+    restart_body = text.split("restart_services() {", 1)[1].split("\n}", 1)[0]
+    optional_bot = text.split("restart_bot_if_configured() {", 1)[1].split("\n}", 1)[0]
 
     assert "restart_bot_service" in text
-    assert "restart_bot_service" in install_body
+    assert "restart_bot_if_configured" in install_body
+    assert "if telegram_config_ready" in restart_body
+    assert 'services+=("$BOT_SERVICE_NAME")' in restart_body
+    assert 'disable --now "$BOT_SERVICE_NAME"' in restart_body
+    assert "restart_bot_service" in optional_bot
 
 
 def test_launcher_repairs_access_storage_before_services_without_wiping_auth():
@@ -315,7 +324,7 @@ def test_launcher_proves_uploaded_source_before_any_update_mutation():
     assert "install_or_update" not in quick
     assert wipe_update.index("validated_update_preflight") < wipe_update.index("wipe_db")
     assert repair_update.index("validated_update_preflight") < repair_update.index("repair_db_io")
-    assert fresh.index("validated_update_preflight") < fresh.index("repair_telegram_env")
+    assert fresh.index("validated_update_preflight") < fresh.index("ensure_tor_runtime")
     assert "install|update) safe_update" in text
 
 
@@ -367,6 +376,21 @@ def test_launcher_telegram_validation_is_static_and_preserves_all_admins():
     assert '",".join(admin_ids)' in body
     assert '"ADMIN_CHAT_ID": admin_ids[0]' in body
     assert 'authorized admins={len(admin_ids)}' in body
+
+
+def test_launcher_treats_missing_telegram_credentials_as_optional():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    install_services = text.split("install_services() {", 1)[1].split("\n}", 1)[0]
+    install = text.split("install_or_update() {", 1)[1].split("\n}", 1)[0]
+    fresh = text.split("fresh_first_install() {", 1)[1].split("\n}", 1)[0]
+
+    assert "telegram_config_ready()" in text
+    assert 'systemctl enable "${APP_SERVICE_NAMES[@]}"' in install_services
+    assert 'systemctl enable "$BOT_SERVICE_NAME"' in install_services
+    assert 'disable --now "$BOT_SERVICE_NAME"' in install_services
+    assert "if telegram_config_ready" in install
+    assert "installing without the optional bot service" in install
+    assert "repair_telegram_env" not in fresh
 
 
 def test_launcher_blank_configuration_answers_preserve_existing_values():
@@ -539,7 +563,6 @@ def test_fresh_install_is_explicit_zero_state_while_normal_wipe_fails_closed():
     assert "Resets dashboard codes/sessions" in text
     assert "Reset crawler and dashboard-access DBs" in text
     assert "Keeps .env, access codes/sessions" not in text
-    assert fresh.index("repair_telegram_env") < fresh.index("install_or_update_with_wipe")
     assert fresh.index("ensure_tor_runtime") < fresh.index("install_or_update_with_wipe")
     assert 'if [[ "${WIPE_DB_BACKUP:-1}" != "0" ]]' in wipe
     assert 'wipe_targets+=("${AUTH_DB_FILES[@]}")' in wipe
