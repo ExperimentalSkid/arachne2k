@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "tags": {
+    "arms": {"strong": ["weapons trafficking", "arms market"], "medium": ["weapons", "guns", "firearms", "armas", "оружие"]},
+    "drugs": {"strong": ["drug market", "narcotics market"], "medium": ["drugs", "narcotics", "drogas", "наркотики"]},
+    "leaks": {"strong": ["data leak", "victim list", "database dump"], "medium": ["leak", "breach", "filtracion", "утечка"]},
+    "credentials": {"strong": ["credential dump", "stolen credentials"], "medium": ["credentials", "password list", "credenciales", "пароли"]},
+    "hacking": {"strong": ["hacking service", "exploit service"], "medium": ["hacking", "exploit", "ciberataque"]},
+    "malware": {"strong": ["malware infrastructure", "ransomware operation"], "medium": ["malware", "ransomware", "botnet", "вредонос"]},
+    "recruitment": {"strong": ["recruitment channel"], "medium": ["recruitment", "reclutamiento", "вербовка"]},
+    "extremist": {"strong": ["extremist recruitment"], "medium": ["extremist", "propaganda", "пропаганда"]},
+    "fraud": {"strong": ["carding", "credit card fraud"], "medium": ["fraud", "cvv", "fullz", "fraude", "мошенничество"]},
+    "marketplace": {"strong": ["dark marketplace"], "medium": ["marketplace", "vendor", "catalog"]},
+    "forum": {"strong": ["discussion forum"], "medium": ["forum", "community", "форум"]},
+    "directory": {"strong": ["hidden service directory"], "medium": ["directory", "onion links", "каталог"]},
+    "hosting": {"strong": ["web hosting service", "anonymous hosting", "vps hosting"], "medium": ["hosting", "web host", "vps", "dedicated server"]},
+    "infosec_research": {"strong": ["cybersecurity research", "responsible disclosure", "security advisory"], "medium": ["infosec", "vulnerability", "cve", "digital forensics"]},
+    "privacy": {"strong": ["digital privacy", "privacy advocacy", "anonymity tools"], "medium": ["privacy", "anonymity", "encryption", "privacidad"]},
+    "news_media": {"strong": ["independent news", "investigative journalism"], "medium": ["news", "journalism", "press", "noticias"]},
+    "religion": {"strong": ["religious community", "religious studies"], "medium": ["religion", "faith", "church", "spirituality"]},
+    "education": {"strong": ["educational resource", "academic research"], "medium": ["education", "tutorial", "library", "documentation"]},
+    "technology": {"strong": ["open source software", "software development"], "medium": ["software", "programming", "source code", "linux"]},
+    "cryptocurrency": {"strong": ["cryptocurrency education", "blockchain research"], "medium": ["bitcoin", "cryptocurrency", "blockchain", "finanzas"]},
+    "civil_society": {"strong": ["human rights organization", "civil society"], "medium": ["activism", "human rights", "censorship", "transparency"]},
+    "personal_blog": {"strong": ["personal blog", "personal journal"], "medium": ["blog", "essays", "personal posts", "writing"]},
+    "communications": {"strong": ["encrypted email service", "secure messaging service"], "medium": ["webmail", "messaging", "chat service", "mailbox"]},
+    "file_storage": {"strong": ["file sharing service", "secure file drop"], "medium": ["file hosting", "share files", "storage service"]},
+    "arts_culture": {"strong": ["art gallery", "literary magazine", "cultural archive"], "medium": ["art", "music", "poetry", "literature", "culture"]},
+    "health": {"strong": ["health information", "mental health support"], "medium": ["health", "wellbeing", "medical", "nutrition"]}
+  }
+}

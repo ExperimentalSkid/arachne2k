@@ -1,0 +1,743 @@
+{
+  "_comment": "Categorized threat detection patterns. Patterns are regex fragments. Engine compiles them per category at startup. Edit via bot menu or directly here, then restart.",
+  "categories": {
+    "EXPLOSIVES": {
+      "tier": 1,
+      "weight": 5,
+      "description": "Explosivos, detonadores, dispositivos",
+      "patterns_en": [
+        "c[-\\s]?4",
+        "semtex",
+        "tnt",
+        "rdx",
+        "petn",
+        "hmx",
+        "tatp",
+        "hmtd",
+        "ied",
+        "vbied"
+      ],
+      "patterns_es": [
+        "anfo",
+        "amonal",
+        "dinamita",
+        "nitroglicerina",
+        "pentrita",
+        "tetril",
+        "hexogen",
+        "per[oó]xido\\s+de\\s+acetona",
+        "nitrato\\s+de\\s+amonio",
+        "clorato\\s+de\\s+potasio",
+        "detonador\\w*",
+        "espoleta",
+        "mecha\\s+lenta",
+        "cord[oó]n\\s+detonante",
+        "artefacto\\s+explosivo",
+        "chaleco\\s+explosivo",
+        "cintur[oó]n\\s+explosivo",
+        "bomba\\s+lapa",
+        "coche\\s+bomba",
+        "paquete\\s+bomba"
+      ],
+      "patterns_ru": [
+        "взрывчатк\\w*",
+        "взрывател\\w*",
+        "сву",
+        "пояс\\s+шахида"
+      ]
+    },
+    "TERROR": {
+      "tier": 1,
+      "weight": 4,
+      "description": "Grupos terroristas, ideología, símbolos",
+      "patterns_en": [
+        "jihad\\w*",
+        "mujahid\\w*",
+        "isis",
+        "daesh",
+        "al[-\\s]?qaeda",
+        "al[-\\s]?qaida",
+        "aqmi",
+        "aqap",
+        "boko\\s+haram",
+        "al[-\\s]?shabaab",
+        "hts",
+        "hayat\\s+tahrir",
+        "jabhat\\s+al[-\\s]?nusra",
+        "haqqani",
+        "hizbull?ah",
+        "hamas",
+        "shaheed",
+        "shahid",
+        "jihadist\\w*",
+        "takfir\\w*",
+        "kafir\\w*",
+        "caliphat\\w*",
+        "blood\\s+(and|&)\\s+honour",
+        "hammerskin\\w*",
+        "combat\\s*18",
+        "atomwaffen",
+        "the\\s+base",
+        "accelerationis\\w*",
+        "great\\s+replacement"
+      ],
+      "patterns_es": [
+        "yihad\\w*",
+        "muyahid\\w*",
+        "estado\\s+isl[aá]mico",
+        "talib[aá]n\\w*",
+        "hezbol[aá]\\w*",
+        "brigadas\\s+al[-\\s]?qassam",
+        "atentad\\w*",
+        "m[aá]rtir\\w*",
+        "yihadist\\w*",
+        "califat\\w*",
+        "sangre\\s+y\\s+honor",
+        "orden\\s+de\\s+los\\s+nueve\\s+[aá]ngulos",
+        "aceleracionism\\w*",
+        "nacionalsocialis\\w*",
+        "neonazi\\w*",
+        "raza\\s+blanca\\s+(superior|pura)",
+        "14[\\s/]88",
+        "reemplazo\\s+[eé]tnico",
+        "gran\\s+reemplazo",
+        "\\beta\\b",
+        "grapo",
+        "resistencia\\s+galega"
+      ],
+      "patterns_ru": [
+        "джихад\\w*",
+        "игил",
+        "даиш",
+        "талибан\\w*",
+        "аль[-\\s]?каид\\w*",
+        "халифат\\w*",
+        "муджахед\\w*",
+        "шахид\\w*"
+      ]
+    },
+    "WEAPONS_HARD": {
+      "tier": 1,
+      "weight": 3,
+      "description": "Armas de fuego, explosivos militares",
+      "patterns_en": [
+        "ak[-\\s]?(?:47|74|103|105|12)",
+        "ar[-\\s]?(?:15|10)",
+        "m[-\\s]?(?:4|16)",
+        "hk[-\\s]?(?:g3|g36|mp5|mp7|416)",
+        "fn[-\\s]?(?:fal|p90|scar)",
+        "uzi",
+        "tec[-\\s]?9",
+        "skorpion",
+        "vz[-\\s]?61",
+        "rpg[-\\s]?(?:7|22|29)",
+        "panzerfaust",
+        "glock\\s*1[789]",
+        "glock\\s*2[0-3]"
+      ],
+      "patterns_es": [
+        "arma\\s+(autom[aá]tica|de\\s+guerra|reglamentaria\\s+robada)",
+        "fusil\\s+de\\s+asalto",
+        "subfusil",
+        "ametralladora",
+        "granada\\s+(de\\s+mano|rpg|antitanque)",
+        "lanzagranadas",
+        "lanzacohetes"
+      ],
+      "patterns_ru": [
+        "калашников\\w*",
+        "гранатомёт\\w*",
+        "пулемёт\\w*"
+      ]
+    },
+    "CBRN": {
+      "tier": 1,
+      "weight": 5,
+      "description": "Armas químicas, biológicas, radiológicas, nucleares",
+      "patterns_en": [
+        "vx\\s+nerve",
+        "tabun",
+        "soman",
+        "novichok",
+        "nerve\\s+agent",
+        "anthrax",
+        "ricin",
+        "yersinia\\s+pestis",
+        "dirty\\s+bomb"
+      ],
+      "patterns_es": [
+        "sarin",
+        "sar[ií]n",
+        "gas\\s+mostaza",
+        "fosgeno",
+        "agente\\s+nervioso",
+        "[aá]ntrax",
+        "carbunco",
+        "botul[ií]nica",
+        "ricina",
+        "bomba\\s+sucia",
+        "cesio\\s*137",
+        "cobalto\\s*60",
+        "estroncio\\s*90",
+        "uranio\\s+(enriquecido|empobrecido|altamente)",
+        "plutonio",
+        "dispositivo\\s+nuclear\\s+improvisado"
+      ],
+      "patterns_ru": [
+        "зарин",
+        "новичок",
+        "сибирск\\w+\\s+язв\\w*",
+        "грязн\\w+\\s+бомб\\w*"
+      ]
+    },
+    "IMMINENT": {
+      "tier": 1,
+      "weight": 3,
+      "description": "Lenguaje de inminencia / acción ya",
+      "patterns_en": [
+        "target\\s+confirmed",
+        "green\\s+light"
+      ],
+      "patterns_es": [
+        "hoy\\s+(mismo\\s+)?(atac\\w+|matar|mato)",
+        "esta\\s+(noche|tarde|semana)\\s+(vamos|voy|ataca\\w+|act[uú]\\w+)",
+        "ma[ñn]ana\\s+(a\\s+las|atac\\w+|act[uú]\\w+|empieza)",
+        "cuenta\\s+atr[aá]s",
+        "hora\\s+(cero|h)",
+        "objetivo\\s+confirmado",
+        "luz\\s+verde"
+      ],
+      "patterns_ru": [
+        "час\\s+икс",
+        "зелён\\w+\\s+свет",
+        "цель\\s+подтверждена"
+      ]
+    },
+    "CYBER": {
+      "tier": 2,
+      "weight": 0,
+      "description": "Cyber chatter — no auto-score, only scores when combined with Spanish target",
+      "patterns_en": [
+        "ddos",
+        "stresser",
+        "booter",
+        "ip[-\\s]?stress\\w*",
+        "botnet",
+        "c2",
+        "c&c",
+        "command\\s+and\\s+control",
+        "layer\\s*[47]",
+        "l[47]\\s+attack",
+        "udp\\s+flood",
+        "syn\\s+flood",
+        "http\\s+flood",
+        "check[-\\s]?host",
+        "ransomware",
+        "wiper",
+        "0[-\\s]?day",
+        "zero[-\\s]?day",
+        "sql\\s*inject\\w*",
+        "sqli",
+        "xss",
+        "rce",
+        "lfi",
+        "rfi",
+        "backdoor",
+        "rootkit",
+        "keylogger",
+        "stealer",
+        "infostealer",
+        "defacement",
+        "cobalt\\s+strike",
+        "metasploit",
+        "mimikatz"
+      ],
+      "patterns_es": [
+        "defacear",
+        "tirar\\s+(la\\s+)?web"
+      ],
+      "patterns_ru": [
+        "ддос",
+        "ботнет",
+        "положить\\s+(сайт|сервер)",
+        "нагрузк\\w*\\s+на\\s+(сайт|сервер)",
+        "взлом\\w*"
+      ]
+    },
+    "VIOLENT_INTENT": {
+      "tier": 2,
+      "weight": 2,
+      "description": "Verbos de intención violenta",
+      "patterns_en": [
+        "kill\\s+them",
+        "wipe\\s+them\\s+out",
+        "behead"
+      ],
+      "patterns_es": [
+        "matar",
+        "matarlos",
+        "matarlas",
+        "asesinar",
+        "ejecutar",
+        "eliminar",
+        "exterminar",
+        "aniquilar",
+        "degollar",
+        "decapitar",
+        "vengar\\w*",
+        "venganza",
+        "hacer\\s+pagar",
+        "que\\s+pague[nr]?",
+        "pasar\\s+a\\s+cuchillo",
+        "borrar\\s+del\\s+mapa"
+      ],
+      "patterns_ru": [
+        "уби(ть|вать|вай|вают)",
+        "казни(ть|вать)",
+        "истреб(ить|лять)",
+        "отомсти(ть|м)",
+        "месть",
+        "стереть\\s+с\\s+лица\\s+земли"
+      ]
+    },
+    "HATE_TARGET": {
+      "tier": 2,
+      "weight": 2,
+      "description": "Slurs y deshumanización dirigida a colectivos",
+      "patterns_en": [
+        "kike[s]?",
+        "holohoax",
+        "subhuman\\w+"
+      ],
+      "patterns_es": [
+        "moros?\\s+de\\s+mierda",
+        "sudac\\w+\\s+de\\s+mierda",
+        "negro[s]?\\s+de\\s+mierda",
+        "gitanos?\\s+de\\s+mierda",
+        "invasores?\\s+(musulmanes|moros|africanos)",
+        "plaga\\s+(de\\s+inmigrantes|musulmana|mora)",
+        "raza\\s+inferior",
+        "infrahuman\\w+",
+        "jud[ií]os?\\s+de\\s+mierda",
+        "holocausto\\s+(falso|mentira|fake)",
+        "sionist\\w+\\s+de\\s+mierda",
+        "infiel\\w+\\s+(deben\\s+morir|al\\s+infierno)",
+        "cruzados?\\s+(matar|colgar|degollar)",
+        "enemig[oa]s?\\s+(del\\s+islam|de\\s+la\\s+raza|de\\s+la\\s+naci[oó]n)"
+      ],
+      "patterns_ru": [
+        "чурк\\w+",
+        "хач\\w+",
+        "жид\\w+",
+        "недочеловек\\w*",
+        "унтерменш\\w*"
+      ]
+    },
+    "LOGISTICS": {
+      "tier": 2,
+      "weight": 1,
+      "description": "Indicadores logísticos: financiación, viaje, reclutamiento",
+      "patterns_en": [
+        "training\\s+camp",
+        "safe\\s+house"
+      ],
+      "patterns_es": [
+        "hawala",
+        "hawalad\\w+",
+        "transferencia\\s+(no\\s+rastreable|an[oó]nima)",
+        "monero",
+        "xmr\\s+(env[ií]o|donaci[oó]n)",
+        "campamento\\s+de\\s+entrenamiento",
+        "viaje\\s+a\\s+(siria|iraq|yemen|afganist[aá]n|sahel)",
+        "pasaporte\\s+falso",
+        "documentaci[oó]n\\s+falsa",
+        "piso\\s+franco",
+        "casa\\s+segura",
+        "reclutamiento",
+        "reclutar\\s+(hermanos|combatientes)",
+        "baya",
+        "bay'?ah",
+        "juramento\\s+de\\s+lealtad"
+      ],
+      "patterns_ru": [
+        "явочн\\w+\\s+квартир\\w*",
+        "вербовк\\w*",
+        "вербовать"
+      ]
+    },
+    "INFRA_ES": {
+      "tier": 3,
+      "weight": 2,
+      "description": "Infraestructura crítica, instituciones y simbólicos en España",
+      "patterns_en": [],
+      "patterns_es": [
+        "aeropuerto\\s+(de\\s+)?(barajas|adolfo\\s+su[aá]rez|el\\s+prat|m[aá]laga|valencia|sevilla|bilbao|palma|alicante|gran\\s+canaria|tenerife)",
+        "aena",
+        "renfe",
+        "adif",
+        "cercan[ií]as",
+        "ave\\s+(madrid|barcelona|sevilla)",
+        "metro\\s+de\\s+(madrid|barcelona|valencia|bilbao|sevilla)",
+        "puerto\\s+de\\s+(algeciras|valencia|barcelona|bilbao)",
+        "red\\s+el[eé]ctrica\\s+(de\\s+espa[ñn]a|española)",
+        "ree",
+        "central\\s+nuclear\\s+(de\\s+)?(almaraz|asc[oó]|cofrentes|trillo|vandell[oó]s)",
+        "refiner[ií]a\\s+(de\\s+)?(cartagena|tarragona|huelva|puertollano|la\\s+coru[ñn]a|castell[oó]n|bilbao)",
+        "gasoducto\\s+magreb",
+        "medgaz",
+        "subestaci[oó]n\\s+el[eé]ctrica",
+        "enag[aá]s",
+        "naturgy",
+        "iberdrola",
+        "endesa",
+        "repsol",
+        "cepsa",
+        "moncloa",
+        "palacio\\s+de\\s+la\\s+moncloa",
+        "zarzuela",
+        "palacio\\s+real",
+        "congreso\\s+de\\s+los\\s+diputados",
+        "senado",
+        "ministerio\\s+(del\\s+interior|de\\s+defensa|de\\s+exteriores|de\\s+asuntos\\s+exteriores|de\\s+justicia|de\\s+hacienda)",
+        "audiencia\\s+nacional",
+        "tribunal\\s+supremo",
+        "cni",
+        "centro\\s+nacional\\s+de\\s+inteligencia",
+        "comisar[ií]a",
+        "comandancia",
+        "acuartelamiento",
+        "base\\s+(a[eé]rea|naval|militar)\\s+de\\s+(rota|mor[oó]n|torrej[oó]n|zaragoza|cartagena|ferrol)",
+        "sagrada\\s+familia",
+        "catedral\\s+de\\s+(sevilla|burgos|toledo|santiago)",
+        "sinagoga\\s+de\\s+(madrid|barcelona)",
+        "mezquita\\s+(central|m[-]?30)"
+      ],
+      "patterns_ru": []
+    },
+    "GEO_ES": {
+      "tier": 3,
+      "weight": 1,
+      "description": "Geografía española y eventos masivos",
+      "patterns_en": [
+        "spain",
+        "mobile\\s+world\\s+congress",
+        "mwc"
+      ],
+      "patterns_es": [
+        "espa[ñn]a",
+        "madrid",
+        "barcelona",
+        "sevilla",
+        "valencia",
+        "bilbao",
+        "m[aá]laga",
+        "zaragoza",
+        "murcia",
+        "palma",
+        "las\\s+palmas",
+        "tenerife",
+        "alicante",
+        "c[oó]rdoba",
+        "granada",
+        "elche",
+        "tarragona",
+        "c[aá]diz",
+        "ceuta",
+        "melilla",
+        "catalu[ñn]a",
+        "pa[ií]s\\s+vasco",
+        "euskadi",
+        "galicia",
+        "andaluc[ií]a",
+        "comunidad\\s+de\\s+madrid",
+        "san\\s+ferm[ií]n",
+        "san\\s+isidro",
+        "feria\\s+de\\s+abril",
+        "semana\\s+santa\\s+de\\s+(sevilla|m[aá]laga)"
+      ],
+      "patterns_ru": [
+        "испани[яюейи]",
+        "ispaniya",
+        "мадрид\\w*",
+        "барселон\\w*",
+        "севиль\\w*",
+        "валенси\\w*"
+      ]
+    },
+    "FIGURES_ES": {
+      "tier": 3,
+      "weight": 2,
+      "description": "Cargos públicos españoles",
+      "patterns_en": [],
+      "patterns_es": [
+        "presidente\\s+del\\s+gobierno",
+        "ministro\\s+(del\\s+interior|de\\s+defensa|de\\s+exteriores)",
+        "jefe\\s+del\\s+estado",
+        "casa\\s+real",
+        "familia\\s+real",
+        "director\\s+(del\\s+cni|de\\s+la\\s+polic[ií]a|de\\s+la\\s+guardia\\s+civil)"
+      ],
+      "patterns_ru": []
+    },
+    "BENIGN": {
+      "tier": 4,
+      "weight": -4,
+      "description": "Contexto académico, periodístico, entretenimiento (damper)",
+      "patterns_en": [
+        "paper",
+        "netflix",
+        "hbo",
+        "prime",
+        "gaming",
+        "streamer",
+        "twitch",
+        "call\\s+of\\s+duty",
+        "cod",
+        "battlefield",
+        "counter[-\\s]?strike",
+        "cs2",
+        "valorant",
+        "fortnite",
+        "warzone",
+        "arma\\s+3"
+      ],
+      "patterns_es": [
+        "universidad",
+        "universitari\\w+",
+        "tesis",
+        "tesina",
+        "tfg",
+        "tfm",
+        "doctorado",
+        "investigaci[oó]n",
+        "investigador\\w*",
+        "art[ií]culo\\s+(acad[eé]mico|cient[ií]fico|de\\s+opini[oó]n)",
+        "estudio\\s+(sobre|de|acad[eé]mico)",
+        "monograf[ií]a",
+        "reportaje",
+        "documental",
+        "periodist\\w+",
+        "cr[oó]nica",
+        "libro\\s+(sobre|de\\s+historia)",
+        "biograf[ií]a",
+        "pel[ií]cula",
+        "filme",
+        "cine",
+        "serie",
+        "episodio",
+        "cap[ií]tulo",
+        "disney\\+",
+        "movistar\\+",
+        "filmin",
+        "videojuego",
+        "libro",
+        "novela",
+        "c[oó]mic",
+        "manga",
+        "partido",
+        "f[uú]tbol",
+        "liga",
+        "champions",
+        "copa\\s+del\\s+rey",
+        "baloncesto",
+        "tenis",
+        "f[oó]rmula\\s+1",
+        "motogp"
+      ],
+      "patterns_ru": [
+        "университет\\w*",
+        "исследовани\\w*",
+        "фильм\\w*",
+        "сериал\\w*",
+        "футбол\\w*",
+        "матч\\w*"
+      ]
+    },
+    "META_QUOTE": {
+      "tier": 4,
+      "weight": -2,
+      "description": "Citas, comunicados, indicadores de discurso reportado",
+      "no_word_boundary": true,
+      "patterns_en": [],
+      "patterns_es": [
+        "seg[uú]n\\s+(el\\s+)?(comunicado|manifiesto|v[ií]deo)",
+        "reivindic\\w+\\s+el\\s+atentado",
+        "\"[^\"]{20,}\"",
+        "el\\s+texto\\s+(dice|reza|afirma)",
+        "declar\\w+\\s+que"
+      ],
+      "patterns_ru": []
+    },
+    "CTX_DOWNGRADE": {
+      "tier": 4,
+      "weight": -2,
+      "description": "Modificador: contexto académico/histórico/ficción",
+      "patterns_en": [
+        "study",
+        "studying",
+        "news",
+        "report",
+        "documentary",
+        "article",
+        "history",
+        "historical",
+        "academic",
+        "research",
+        "film",
+        "movie",
+        "book",
+        "according\\s+to",
+        "in\\s+the\\s+past"
+      ],
+      "patterns_es": [
+        "estudio",
+        "estudiando",
+        "estudiar",
+        "noticia",
+        "noticias",
+        "reportaje",
+        "documental",
+        "art[ií]culo",
+        "historia",
+        "hist[oó]rico",
+        "acad[eé]mico",
+        "investigaci[oó]n",
+        "pel[ií]cula",
+        "libro",
+        "novela",
+        "seg[uú]n",
+        "en\\s+el\\s+pasado"
+      ],
+      "patterns_ru": [
+        "анализ",
+        "изучен",
+        "истори"
+      ]
+    },
+    "LEAKS_EXTORTION": {
+      "tier": 2,
+      "weight": 5,
+      "description": "Passive detection of public leak or extortion references",
+      "patterns_en": ["data\\s+leak", "breach\\s+notice", "victim\\s+list", "extortion\\s+claim"],
+      "patterns_es": ["filtraci[oó]n\\s+de\\s+datos", "lista\\s+de\\s+v[ií]ctimas"],
+      "patterns_ru": []
+    },
+    "WEAPONS_TRAFFICKING_CONTEXT": {
+      "tier": 2,
+      "weight": 4,
+      "description": "Neutral analytical detection of weapons-trafficking context",
+      "patterns_en": ["weapons?\\s+trafficking", "illicit\\s+arms\\s+network"],
+      "patterns_es": ["tr[aá]fico\\s+de\\s+armas", "red\\s+il[ií]cita\\s+de\\s+armas"],
+      "patterns_ru": []
+    },
+    "MIRROR_INFRA": {
+      "tier": 3,
+      "weight": 2,
+      "description": "Mirror infrastructure references",
+      "patterns_en": ["official\\s+mirrors?", "mirror\\s+list", "alternative\\s+address"],
+      "patterns_es": ["espejos?\\s+oficial", "lista\\s+de\\s+espejos"],
+      "patterns_ru": []
+    },
+    "CONTACT_INDICATORS": {
+      "tier": 3,
+      "weight": 1,
+      "description": "Contact indicators retained as evidence only",
+      "patterns_en": ["telegram\\s*[:@]", "contact\\s+handle", "pgp\\s+(?:key|fingerprint)"],
+      "patterns_es": ["contacto\\s+telegram", "huella\\s+pgp"],
+      "patterns_ru": []
+    },
+    "DATA_DUMP_CONTEXT": {
+      "tier": 2,
+      "weight": 4,
+      "description": "References to exposed bulk datasets; content is not stored",
+      "patterns_en": ["database\\s+dump", "records\\s+exposed", "bulk\\s+dataset"],
+      "patterns_es": ["volcado\\s+de\\s+base\\s+de\\s+datos", "registros\\s+expuestos"],
+      "patterns_ru": []
+    },
+    "RECRUITMENT_CONTEXT": {
+      "tier": 2,
+      "weight": 4,
+      "description": "Suspicious recruitment references for analyst review",
+      "patterns_en": ["recruitment\\s+channel", "recruiting\\s+members"],
+      "patterns_es": ["canal\\s+de\\s+reclutamiento", "reclutando\\s+miembros"],
+      "patterns_ru": []
+    },
+    "CYBER_INFRA_CONTEXT": {
+      "tier": 3,
+      "weight": 3,
+      "description": "Passive suspicious cyber-infrastructure context",
+      "patterns_en": ["command\\s+and\\s+control", "malware\\s+infrastructure", "phishing\\s+infrastructure"],
+      "patterns_es": ["infraestructura\\s+de\\s+malware", "infraestructura\\s+de\\s+phishing"],
+      "patterns_ru": []
+    },
+    "CTX_UPGRADE": {
+      "tier": 4,
+      "weight": 3,
+      "description": "Modificador: lenguaje imperativo / intención de acción",
+      "patterns_en": [
+        "we\\s+must",
+        "now",
+        "it'?s\\s+time",
+        "let'?s",
+        "i\\s+will",
+        "i'?m\\s+going",
+        "prepare",
+        "preparing",
+        "ready",
+        "call\\s+to",
+        "call\\s+for"
+      ],
+      "patterns_es": [
+        "hay\\s+que",
+        "debemos",
+        "tenemos\\s+que",
+        "ahora",
+        "ya\\s+es\\s+hora",
+        "vamos\\s+a",
+        "voy\\s+a",
+        "prepara",
+        "listo",
+        "preparado",
+        "llamado\\s+a"
+      ],
+      "patterns_ru": [
+        "необходимо",
+        "должны",
+        "готов",
+        "сейчас\\s+время"
+      ]
+    }
+  },
+  "cooccurrence_rules": [
+    {
+      "_comment": "Threat signal + Spanish target = priority alert",
+      "requires_any_of": [
+        "EXPLOSIVES",
+        "TERROR",
+        "WEAPONS_HARD",
+        "CBRN",
+        "IMMINENT",
+        "VIOLENT_INTENT"
+      ],
+      "with_any_of": [
+        "INFRA_ES",
+        "GEO_ES",
+        "FIGURES_ES"
+      ],
+      "bonus": 4,
+      "tag": "threat+es_target"
+    },
+    {
+      "_comment": "Cyber chatter only counts when paired with Spanish target",
+      "requires_any_of": [
+        "CYBER"
+      ],
+      "with_any_of": [
+        "INFRA_ES",
+        "FIGURES_ES"
+      ],
+      "bonus": 3,
+      "tag": "cyber+es_target"
+    }
+  ]
+}

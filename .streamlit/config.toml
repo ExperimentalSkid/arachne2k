@@ -1,0 +1,14 @@
+[server]
+fileWatcherType = "none"
+runOnSave = false
+
+# Keep Streamlit's unauthenticated shell deliberately neutral.  The authenticated
+# workspace applies its dark-default semantic theme from ui_styles.py, while the
+# light-mode override uses the same component geometry and tokens.
+[theme]
+base = "light"
+primaryColor = "#147f83"
+backgroundColor = "#f3f6f9"
+secondaryBackgroundColor = "#edf3f7"
+textColor = "#14212b"
+font = "sans serif"

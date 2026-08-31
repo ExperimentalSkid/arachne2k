@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "purpose": "Deterministic regression corpus only; not an accuracy benchmark",
+  "alias_cases": [
+    {
+      "id": "legitimate_phpbb_author",
+      "candidate": {"accepted": true, "evidence_version": 2, "alias": "NightFox77", "role": "forum_member", "evidence_type": "phpbb_post_author", "confidence": 0.97, "evidence_strength": "strong", "source_scope": "post_author", "evidence_signals": ["profile_link", "anchor_slug_match"], "profile_identity": "query:u:17"},
+      "expected_state": "accepted_observation",
+      "expected_reason": "accepted_strong_structural"
+    },
+    {
+      "id": "legitimate_unicode_author",
+      "candidate": {"accepted": true, "evidence_version": 2, "alias": "MørkUlv", "role": "forum_member", "evidence_type": "nodebb_post_author", "confidence": 0.94, "evidence_strength": "strong", "source_scope": "post_author", "evidence_signals": ["data_username"]},
+      "expected_state": "accepted_observation",
+      "expected_reason": "accepted_strong_structural"
+    },
+    {
+      "id": "mixed_script_lookalike",
+      "candidate": {"accepted": true, "evidence_version": 2, "alias": "NіghtFox", "role": "forum_member", "evidence_type": "phpbb_post_author", "confidence": 0.97, "evidence_strength": "strong", "source_scope": "post_author", "evidence_signals": ["profile_link", "anchor_slug_match"]},
+      "expected_state": "analyst_review_candidate",
+      "expected_reason": "review_mixed_script"
+    },
+    {
+      "id": "quoted_username",
+      "candidate": {"alias": "QuotedFox", "source_scope": "quoted_post"},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_blocked_context"
+    },
+    {
+      "id": "navigation_word",
+      "candidate": {"alias": "admin"},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_generic_role"
+    },
+    {
+      "id": "filename_value",
+      "candidate": {"alias": "payload.sql"},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_filename_like"
+    },
+    {
+      "id": "provider_name",
+      "candidate": {"alias": "gmail"},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_provider_word"
+    },
+    {
+      "id": "numeric_profile_id",
+      "candidate": {"alias": "417", "profile_identity": "query:u:417"},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_numeric_identifier"
+    },
+    {
+      "id": "generated_deleted_user",
+      "candidate": {"alias": "user_123456"},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_generated_label"
+    },
+    {
+      "id": "repeated_template_alias",
+      "candidate": {"alias": "TemplateFox", "unrelated_host_count": 5, "template_repetition_count": 9},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_template_boilerplate"
+    },
+    {
+      "id": "conflicting_profile_route",
+      "candidate": {"alias": "RouteFox", "profile_url": "/users/not-routefox", "profile_route_agreement": false},
+      "expected_state": "rejected_noise",
+      "expected_reason": "rejected_profile_route_mismatch"
+    },
+    {
+      "id": "weak_unverified_candidate",
+      "candidate": {"alias": "PossibleFox", "confidence": 0.61, "evidence_type": "explicit_author_label"},
+      "expected_state": "analyst_review_candidate",
+      "expected_reason": "review_weak_evidence"
+    }
+  ],
+  "expansion_records": [
+    {"url": "/memberlist.php?mode=viewprofile&u=17"},
+    {"url": "/memberlist.php?u=17&mode=viewprofile"},
+    {"url": "/viewtopic.php?t=7"},
+    {"url": "/viewtopic.php?t=7&start=20"},
+    {"url": "/about"},
+    {"url": "/login"},
+    {"url": "/search.php?q=anything"},
+    {"url": "/about?utm_source=trap"},
+    {"url": "/archive.zip"},
+    {"url": "http://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.onion/about"},
+    {"url": "/contact", "method": "POST"},
+    {"url": "/restricted", "policy": {"storage_policy": "metadata_only"}}
+  ],
+  "expected_expansion": {
+    "proposed_roles": ["profile", "about", "thread"],
+    "duplicate_resources": 2,
+    "blocked_routes": 2,
+    "tracking_variants": 1,
+    "fetch_policy_blocked": 1,
+    "cross_host": 1,
+    "non_get": 1,
+    "child_policy_blocked": 1
+  }
+}

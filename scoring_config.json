@@ -1,0 +1,61 @@
+{
+  "_comment": "Scoring weights, thresholds and tuning. Edit and restart bot to apply.",
+  "thresholds": {
+    "alert_threshold_default": 6,
+    "risk_bajo": 3,
+    "risk_medio": 6,
+    "risk_alto": 10,
+    "risk_critico": 15
+  },
+  "score_weights": {
+    "tier1_explosives": 5,
+    "tier1_terror": 4,
+    "tier1_weapons_hard": 3,
+    "tier1_cbrn": 5,
+    "tier1_imminent": 3,
+    "tier2_violent_intent": 2,
+    "tier2_hate_target": 2,
+    "tier2_logistics": 1,
+    "tier3_infra_es": 2,
+    "tier3_geo_es": 1,
+    "tier3_figures_es": 2,
+    "tier4_benign": -4,
+    "tier4_meta_quote": -2,
+    "ctx_downgrade": -2,
+    "ctx_upgrade": 3,
+    "ml_sentiment_neg": 1,
+    "ml_hate_es": 2,
+    "cooccur_threat_plus_es_target": 4,
+    "repetition_per_category": 3
+  },
+  "burst_detection": {
+    "window_minutes": 10,
+    "min_triggers": 3,
+    "cooldown_minutes": 30
+  },
+  "escalation_detection": {
+    "recent_window": 10,
+    "older_window": 50,
+    "min_ratio": 1.5
+  },
+  "decay_weights": {
+    "last_hour": 1.0,
+    "last_24h": 0.5,
+    "older": 0.2
+  },
+  "user_risk_formula": {
+    "avg_score_weight": 0.4,
+    "trigger_rate_weight": 0.3,
+    "burst_factor_weight": 0.2,
+    "group_factor_weight": 0.1
+  },
+  "classification_rules": {
+    "agitator_recent_triggers_min": 3,
+    "agitator_trigger_rate_min": 0.3,
+    "bridge_groups_min": 2,
+    "bridge_triggers_min": 3,
+    "spammer_total_msgs_min": 50,
+    "spammer_trigger_rate_max": 0.05,
+    "active_trigger_rate_min": 0.2
+  }
+}

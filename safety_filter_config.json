@@ -1,0 +1,230 @@
+{
+  "version": 2,
+  "rules": [
+    {"rule_id":"severe-abuse-mixed-001","language":"mixed","category":"severe_abuse_risk","weight":"critical","match_target":"destination_title_body_html","action_policy":"metadata_only_block","display_safe_label":"Restricted content","log_safe_label":"severe_abuse_risk"},
+    {"rule_id":"adult-mixed-001","language":"mixed","category":"adult_restricted","weight":"critical","match_target":"destination_title_body_html","action_policy":"metadata_only_block","display_safe_label":"Adult content restricted","log_safe_label":"adult_restricted"},
+    {"rule_id":"weapons-mixed-001","language":"mixed","category":"weapons_arms","weight":"strong","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Weapons context","log_safe_label":"weapons_arms"},
+    {"rule_id":"drugs-mixed-001","language":"mixed","category":"drugs","weight":"strong","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Drugs context","log_safe_label":"drugs"},
+    {"rule_id":"leaks-mixed-001","language":"mixed","category":"leaks_data","weight":"strong","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Leaks context","log_safe_label":"leaks_data"},
+    {"rule_id":"credentials-mixed-001","language":"mixed","category":"credentials","weight":"strong","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Credentials context","log_safe_label":"credentials"},
+    {"rule_id":"malware-mixed-001","language":"mixed","category":"malware_hacking","weight":"strong","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Malware or hacking context","log_safe_label":"malware_hacking"},
+    {"rule_id":"recruitment-mixed-001","language":"mixed","category":"extremist_recruitment","weight":"strong","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Recruitment context","log_safe_label":"extremist_recruitment"},
+    {"rule_id":"fraud-mixed-001","language":"mixed","category":"fraud_financial","weight":"strong","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Financial fraud context","log_safe_label":"fraud_financial"},
+    {"rule_id":"market-mixed-001","language":"mixed","category":"marketplace","weight":"medium","match_target":"destination_title_body_html","action_policy":"metadata_limited_review","display_safe_label":"Marketplace context","log_safe_label":"marketplace"},
+    {"rule_id":"forum-mixed-001","language":"mixed","category":"forum_social","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_expand","display_safe_label":"Forum or social page","log_safe_label":"forum_social"},
+    {"rule_id":"directory-mixed-001","language":"mixed","category":"directory_index","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_expand","display_safe_label":"Directory or index","log_safe_label":"directory_index"},
+    {"rule_id":"hosting-mixed-001","language":"mixed","category":"hosting_services","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_expand","display_safe_label":"Hosting or services","log_safe_label":"hosting_services"},
+    {"rule_id":"infosec-mixed-001","language":"mixed","category":"infosec_research","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Information security or research","log_safe_label":"infosec_research"},
+    {"rule_id":"privacy-mixed-001","language":"mixed","category":"privacy_anonymity","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Privacy or anonymity","log_safe_label":"privacy_anonymity"},
+    {"rule_id":"news-mixed-001","language":"mixed","category":"news_media","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"News or journalism","log_safe_label":"news_media"},
+    {"rule_id":"religion-mixed-001","language":"mixed","category":"religion_spirituality","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Religion or spirituality","log_safe_label":"religion_spirituality"},
+    {"rule_id":"education-mixed-001","language":"mixed","category":"education_reference","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Education or reference","log_safe_label":"education_reference"},
+    {"rule_id":"technology-mixed-001","language":"mixed","category":"technology_software","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Technology or software","log_safe_label":"technology_software"},
+    {"rule_id":"finance-mixed-001","language":"mixed","category":"finance_cryptocurrency","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Finance or cryptocurrency","log_safe_label":"finance_cryptocurrency"},
+    {"rule_id":"activism-mixed-001","language":"mixed","category":"activism_civil_society","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Activism or civil society","log_safe_label":"activism_civil_society"},
+    {"rule_id":"blog-mixed-001","language":"mixed","category":"personal_blog","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Personal blog or writing","log_safe_label":"personal_blog"},
+    {"rule_id":"communications-mixed-001","language":"mixed","category":"communication_services","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Email or messaging","log_safe_label":"communication_services"},
+    {"rule_id":"files-mixed-001","language":"mixed","category":"file_storage_sharing","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"File sharing or storage","log_safe_label":"file_storage_sharing"},
+    {"rule_id":"arts-mixed-001","language":"mixed","category":"arts_culture","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Arts or culture","log_safe_label":"arts_culture"},
+    {"rule_id":"health-mixed-001","language":"mixed","category":"health_wellness","weight":"medium","match_target":"destination_title_body_html","action_policy":"safe_summary_monitor","display_safe_label":"Health or wellbeing","log_safe_label":"health_wellness"},
+    {"rule_id":"spain-mixed-001","language":"mixed","category":"spain_priority","weight":"strong","match_target":"url_host_path_title_meta_body_anchor_source_context","action_policy":"priority_overlay","display_safe_label":"Spain priority","log_safe_label":"spain_priority"}
+  ],
+  "category_precedence": [
+    "severe_abuse_risk", "adult_restricted", "weapons_arms", "drugs",
+    "credentials", "malware_hacking", "extremist_recruitment", "leaks_data",
+    "fraud_financial", "marketplace", "directory_index", "forum_social",
+    "hosting_services", "contact_infrastructure", "infosec_research",
+    "privacy_anonymity", "news_media", "religion_spirituality", "education_reference",
+    "technology_software", "finance_cryptocurrency", "activism_civil_society",
+    "personal_blog", "communication_services", "file_storage_sharing", "arts_culture",
+    "health_wellness", "unknown"
+  ],
+  "categories": {
+    "severe_abuse_risk": {
+      "strong": ["severe_abuse_risk", "child sexual abuse material", "csam"],
+      "medium": ["restricted abuse content"],
+      "context_bound_terms": [
+        "child porn", "childporn", "child pornography", "underage porn",
+        "preteen porn", "minor porn", "pedo", "pedophile", "pedofilo",
+        "pedofilia", "loli", "lolicon", "jailbait", "cp"
+      ],
+      "corroborating_context_families": ["sexual", "media_or_exchange"],
+      "risk_level": "critical", "storage_policy": "metadata_only",
+      "review_status": "restricted", "screenshot_policy": "blocked", "queue_policy": "blocked",
+      "risk_flags": ["restricted_content", "severe_abuse_risk"], "safe_reason": "severe_abuse_risk"
+    },
+    "adult_restricted": {
+      "unverified_url_hints": ["porn", "porno", "xxx", "adult"],
+      "strong": ["porn", "porno", "pornography", "xxx", "adult content", "explicit sexual"],
+      "medium": ["sex", "nude", "naked", "escort", "cam", "erotic", "fetish", "hentai"],
+      "risk_level": "filtered", "storage_policy": "discard",
+      "review_status": "filtered", "screenshot_policy": "blocked", "queue_policy": "blocked",
+      "risk_flags": ["adult_filtered"], "safe_reason": "adult_content_filtered"
+    },
+    "weapons_arms": {
+      "strong": ["weapons trafficking", "arms market", "firearms sale", "weapon vendor", "trafico de armas", "venta de armas", "торговля оружием", "weapons", "firearms", "guns", "armas", "оружие"],
+      "medium": ["weapon", "arms", "fusiles", "пистолет"],
+      "risk_level": "high", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["weapons_context"], "safe_reason": "weapons_context"
+    },
+    "drugs": {
+      "strong": ["drug market", "narcotics market", "venta de drogas", "рынок наркотиков"],
+      "medium": ["drugs", "narcotics", "cocaine", "heroin", "fentanyl", "drogas", "narcoticos", "наркотики"],
+      "risk_level": "high", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["drugs_context"], "safe_reason": "drugs_context"
+    },
+    "leaks_data": {
+      "strong": ["data leak", "victim list", "database dump", "breach data", "filtracion de datos", "lista de victimas", "утечка данных"],
+      "medium": ["leak", "breach", "exposed records", "filtracion", "datos expuestos", "утечка", "документы"],
+      "risk_level": "high", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["leak_context"], "safe_reason": "leaks_data_context"
+    },
+    "credentials": {
+      "strong": ["credential dump", "stolen credentials", "combo list", "stealer logs", "credenciales robadas", "пароли и логины"],
+      "medium": ["credentials", "password list", "login data", "credenciales", "contrasenas", "учетные данные", "пароли"],
+      "risk_level": "high", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["possible_credentials"], "safe_reason": "credentials_context"
+    },
+    "malware_hacking": {
+      "strong": ["malware infrastructure", "ransomware operation", "command and control", "infraestructura de malware", "вредоносная инфраструктура"],
+      "medium": ["malware", "ransomware", "phishing", "botnet", "exploit", "hacking", "ciberataque", "вредонос", "фишинг", "ботнет"],
+      "risk_level": "high", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["malware_hacking_context"], "safe_reason": "malware_hacking_context"
+    },
+    "extremist_recruitment": {
+      "strong": ["extremist recruitment", "terror recruitment", "reclutamiento extremista", "вербовка экстремистов"],
+      "medium": ["recruitment channel", "join our group", "reclutamiento", "propaganda", "вербовка", "пропаганда"],
+      "risk_level": "high", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["extremist_recruitment_context"], "safe_reason": "extremist_recruitment_context"
+    },
+    "fraud_financial": {
+      "strong": ["carding", "credit card fraud", "stolen cards", "financial fraud", "fraude financiero", "мошенничество с картами"],
+      "medium": ["cvv", "fullz", "card dumps", "fraud", "estafa", "fraude", "мошенничество"],
+      "risk_level": "high", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["financial_fraud_context"], "safe_reason": "fraud_financial_context"
+    },
+    "marketplace": {
+      "strong": ["dark marketplace", "vendor listings", "marketplace"],
+      "medium": ["vendor", "product listings", "catalog", "рынок", "market"],
+      "risk_level": "medium", "storage_policy": "metadata_limited", "review_status": "needs_review",
+      "screenshot_policy": "blocked", "queue_policy": "reviewable", "risk_flags": ["marketplace_context"], "safe_reason": "marketplace_context"
+    },
+    "directory_index": {
+      "strong": ["hidden service directory", "onion directory", "directory index"],
+      "medium": ["directory", "onion links", "link index", "каталог ссылок"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "pending",
+      "screenshot_policy": "allowed", "queue_policy": "expand", "risk_flags": [], "safe_reason": "directory_index"
+    },
+    "forum_social": {
+      "strong": ["discussion forum", "community forum"],
+      "medium": ["forum", "community", "discussion board", "форум"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "pending",
+      "screenshot_policy": "allowed", "queue_policy": "expand", "risk_flags": [], "safe_reason": "forum_social"
+    },
+    "hosting_services": {
+      "strong": ["hidden service hosting", "onion hosting", "web hosting service", "anonymous hosting", "vps hosting", "server hosting", "servicio de alojamiento web"],
+      "medium": ["hosting", "web host", "vps", "shared hosting", "dedicated server", "domain hosting", "server rental", "alojamiento web", "хостинг"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "pending",
+      "screenshot_policy": "allowed", "queue_policy": "expand", "risk_flags": [], "safe_reason": "hosting_services"
+    },
+    "contact_infrastructure": {
+      "strong": ["official mirrors", "contact infrastructure"],
+      "medium": ["telegram", "pgp fingerprint", "mirror list", "contact", "зеркала"],
+      "risk_level": "medium", "storage_policy": "safe_summary", "review_status": "pending",
+      "screenshot_policy": "allowed", "queue_policy": "expand", "risk_flags": [], "safe_reason": "contact_infrastructure"
+    },
+    "infosec_research": {
+      "strong": ["information security research", "cybersecurity research", "responsible disclosure", "security advisory", "vulnerability research", "defensive security", "threat intelligence research", "investigacion de seguridad", "seguridad informatica"],
+      "medium": ["infosec", "cybersecurity", "security research", "vulnerability", "cve", "penetration testing", "reverse engineering", "digital forensics", "malware analysis", "analisis de malware"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_infosec_research"
+    },
+    "privacy_anonymity": {
+      "strong": ["privacy advocacy", "digital privacy", "anonymity tools", "online privacy guide", "surveillance resistance", "privacidad digital", "herramientas de anonimato"],
+      "medium": ["privacy", "anonymity", "encryption", "digital rights", "metadata protection", "privacidad", "anonimato", "cifrado"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_privacy_anonymity"
+    },
+    "news_media": {
+      "strong": ["independent news", "news publication", "investigative journalism", "press freedom", "news archive", "noticias independientes", "periodismo de investigacion"],
+      "medium": ["news", "journalism", "reporter", "press", "editorial", "current affairs", "noticias", "periodismo", "prensa"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_news_media"
+    },
+    "religion_spirituality": {
+      "strong": ["religious community", "religious studies", "faith community", "spiritual teachings", "scripture study", "comunidad religiosa", "estudios religiosos"],
+      "medium": ["religion", "faith", "church", "christian", "islam", "muslim", "judaism", "jewish", "buddhism", "hinduism", "prayer", "spirituality", "iglesia", "oracion"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_religion_spirituality"
+    },
+    "education_reference": {
+      "strong": ["educational resource", "learning materials", "academic research", "online library", "reference archive", "documentation portal", "recurso educativo", "investigacion academica"],
+      "medium": ["education", "tutorial", "course", "research paper", "documentation", "library", "reference", "learning", "educacion", "biblioteca"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_education_reference"
+    },
+    "technology_software": {
+      "strong": ["open source software", "software development", "developer documentation", "source code repository", "software project", "software libre", "desarrollo de software"],
+      "medium": ["software", "programming", "developer", "source code", "git repository", "linux", "open source", "programacion", "codigo fuente"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_technology_software"
+    },
+    "finance_cryptocurrency": {
+      "strong": ["cryptocurrency news", "blockchain research", "bitcoin community", "cryptocurrency education", "financial education", "noticias de criptomonedas", "educacion financiera"],
+      "medium": ["bitcoin", "cryptocurrency", "blockchain", "finance", "financial markets", "criptomoneda", "cadena de bloques", "finanzas"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_finance_cryptocurrency"
+    },
+    "activism_civil_society": {
+      "strong": ["human rights organization", "civil society", "freedom of speech", "whistleblower support", "activist community", "organizacion de derechos humanos", "sociedad civil"],
+      "medium": ["activism", "human rights", "digital rights", "censorship", "transparency", "whistleblower", "activismo", "derechos humanos", "censura", "transparencia"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_activism_civil_society"
+    },
+    "personal_blog": {
+      "strong": ["personal blog", "personal journal", "personal website", "my writing", "blog personal", "diario personal"],
+      "medium": ["blog", "author", "essays", "personal posts", "writing", "articulos personales", "ensayos"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_personal_blog"
+    },
+    "communication_services": {
+      "strong": ["encrypted email service", "secure messaging service", "anonymous email", "webmail service", "private messaging", "servicio de correo cifrado", "mensajeria segura"],
+      "medium": ["email service", "webmail", "messaging", "chat service", "mailbox", "correo electronico", "mensajeria"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_communication_services"
+    },
+    "file_storage_sharing": {
+      "strong": ["file sharing service", "cloud storage", "secure file drop", "document sharing", "servicio de archivos", "almacenamiento de archivos"],
+      "medium": ["upload files", "file hosting", "share files", "storage service", "subir archivos", "compartir archivos"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_file_storage_sharing"
+    },
+    "arts_culture": {
+      "strong": ["art gallery", "literary magazine", "music community", "cultural archive", "galeria de arte", "revista literaria"],
+      "medium": ["art", "music", "poetry", "literature", "photography", "culture", "arte", "musica", "literatura", "cultura"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_arts_culture"
+    },
+    "health_wellness": {
+      "strong": ["health information", "mental health support", "medical education", "wellbeing resources", "informacion de salud", "apoyo de salud mental"],
+      "medium": ["health", "wellbeing", "medical", "fitness", "nutrition", "therapy", "salud", "bienestar", "nutricion"],
+      "risk_level": "low", "storage_policy": "safe_summary", "review_status": "monitor",
+      "screenshot_policy": "allowed", "queue_policy": "normal", "risk_flags": [], "safe_reason": "neutral_health_wellness"
+    },
+    "unknown": {
+      "strong": [], "medium": [], "risk_level": "low", "storage_policy": "safe_summary",
+      "review_status": "pending", "screenshot_policy": "blocked", "queue_policy": "normal",
+      "risk_flags": [], "safe_reason": "unclassified"
+    }
+  },
+  "spain": {
+    "strong_additional": ["gobierno espanol", "moncloa", "ejercito espanol", "ispanskaya politsiya", "grazhdanskaya gvardiya"],
+    "country_additional": [".es", "ispaniya", "ispanskiy", "ispanskaya", "ispanskie"],
+    "weak_cities_additional": ["barselona", "sevilya", "valensiya", "kadiz", "saragosa", "alikante", "mursiya", "kordova", "seuta", "melilya"],
+    "strong": ["gob.es", "interior.gob.es", "defensa.gob.es", "policia.es", "guardiacivil.es", "boe.es", "ine.es", "guardia civil", "cni", "ministerio del interior", "ministerio de defensa", "policia nacional", "gobierno de espana", "правительство испании", "мвд испании", "министерство внутренних дел испании", "министерство обороны испании", "испанская полиция", "национальная полиция испании", "гражданская гвардия"],
+    "country": ["spain", "espana", "spanish", "espanol", "espanola", "espanoles", "испания", "испанский", "испанская", "испанские", "испанцев"],
+    "weak_cities": ["madrid", "barcelona", "sevilla", "valencia", "malaga", "cadiz", "zaragoza", "bilbao", "alicante", "murcia", "granada", "cordoba", "algeciras", "ceuta", "melilla", "andalucia", "cataluna", "catalunya", "pais vasco", "euskadi", "мадрид", "барселона", "севилья", "валенсия", "малага", "кадис", "сарагоса", "бильбао", "аликанте", "мурсия", "гранада", "кордова", "сеута", "мелилья", "андалусия", "каталония", "страна басков"],
+    "threat_context": ["weapons", "arms", "leak", "credentials", "malware", "recruitment", "extremist", "fraud", "filtracion", "credenciales", "armas", "reclutamiento", "утечка", "пароли", "вредонос", "вербовка"],
+    "russian_geopolitical": ["nato", "нато", "ukraine", "ucrania", "украина", "sanctions", "sanciones", "санкции", "intelligence", "inteligencia", "разведка", "recruitment", "reclutamiento", "вербовка", "propaganda", "пропаганда", "disinformation", "desinformacion", "дезинформация", "russia", "rusia", "россия"]
+  }
+}
