@@ -117,6 +117,21 @@ def test_daily_backup_is_integrity_checked_and_retains_seven(isolated_db, tmp_pa
     assert staged["prepared"] == 1
 
 
+def test_corrupt_daily_archive_is_rebuilt_instead_of_reused(isolated_db, tmp_path, monkeypatch):
+    monkeypatch.setattr(backup_service, "DB_PATH", isolated_db)
+    monkeypatch.setattr(backup_service, "BACKUPS_DIR", tmp_path / "backups")
+    monkeypatch.setattr(backup_service, "REPORTS_DIR", tmp_path / "no-reports")
+    first = backup_service.create_daily_backup()
+    Path(first["path"]).write_bytes(b"truncated archive")
+
+    repaired = backup_service.create_daily_backup()
+    assert repaired["created"] == 1
+    assert repaired["repaired"] == 1
+    with zipfile.ZipFile(repaired["path"]) as archive:
+        assert archive.testzip() is None
+        assert "messages.db" in archive.namelist()
+
+
 def test_daily_backup_does_not_create_an_empty_missing_database(tmp_path, monkeypatch):
     missing = tmp_path / "missing.db"
     monkeypatch.setattr(backup_service, "DB_PATH", missing)

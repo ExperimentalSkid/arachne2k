@@ -13,7 +13,7 @@ import site_dedupe
 import storage
 import dashboard_auth
 from log_redaction import redact_for_log
-from report_builder import build_site_card_report
+from report_builder import build_site_card_report, neutralize_report_embeds
 from paths import REPORTS_DIR
 from screenshot_service import screenshot_support_status
 from dashboard_services.i18n import (category_description, category_family, category_label,
@@ -1072,7 +1072,8 @@ def render_selected_page(st, query) -> None:
                                    data=report_path.read_bytes(), file_name=report_path.name,
                                    mime="text/markdown", key=f"report-download-{card_id}")
                 with st.expander(_l(language, "Read report here (optional)", "Leer informe aqué (opcional)")):
-                    st.markdown(report_path.read_text(encoding="utf-8", errors="replace"))
+                    st.markdown(neutralize_report_embeds(
+                        report_path.read_text(encoding="utf-8", errors="replace")))
             with st.expander(_l(language, "Previous report versions", "Versiones anteriores")):
                 for report in report_rows:
                     st.caption(f"{_display_timestamp(report.get('ts'))} · "

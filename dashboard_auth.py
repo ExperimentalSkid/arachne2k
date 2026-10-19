@@ -249,10 +249,9 @@ def _session_hash(token: str) -> str:
 
 
 def _client_hash(user_agent: str = "", ip_hint: str = "") -> str:
-    """Return a non-reversible throttle/session hint; never persist raw client data."""
-    material = f"{str(ip_hint or '').strip()}\n{str(user_agent or '').strip()}" or "unknown-client"
-    if not material.strip():
-        material = "unknown-client"
+    """Hash the server-observed address for throttling, ignoring mutable UA text."""
+    del user_agent
+    material = str(ip_hint or "").strip() or "unknown-client"
     return hashlib.sha256(material.encode("utf-8", "ignore")).hexdigest()
 
 
@@ -598,10 +597,13 @@ def revoke_dashboard_session(token: str | None) -> None:
         return
     ready, exc = _access_storage_ready()
     if not ready:
-        return
-    with _auth_db() as db:
-        db.execute("UPDATE dashboard_sessions SET revoked_at=COALESCE(revoked_at,?) WHERE session_hash=?",
-                   (_iso(_now()), _session_hash(token)))
+        raise RuntimeError("Dashboard access storage is unavailable") from exc
+    try:
+        with _auth_db() as db:
+            db.execute("UPDATE dashboard_sessions SET revoked_at=COALESCE(revoked_at,?) WHERE session_hash=?",
+                       (_iso(_now()), _session_hash(token)))
+    except (OSError, sqlite3.Error) as db_exc:
+        raise RuntimeError("Dashboard access storage is unavailable") from db_exc
 
 
 def dashboard_access_status() -> dict:

@@ -469,6 +469,19 @@ def test_launcher_blank_configuration_answers_preserve_existing_values():
     assert '${manual_pull:-true}' not in body
 
 
+def test_launcher_private_environment_updates_use_atomic_helper():
+    text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
+    configure = _launcher_function(text, "configure_env")
+    repair = _launcher_function(text, "repair_telegram_env")
+    update = _launcher_function(text, "set_env_key")
+    bootstrap = _launcher_function(text, "ensure_bootstrap_env")
+
+    assert "ensure_bootstrap_env" in configure
+    assert "read_private_env, write_private_env" in repair
+    assert "read_private_env, write_private_env" in update
+    assert '[[ -L ".env" ]]' in bootstrap
+
+
 def test_launcher_serializes_maintenance_and_hardens_service_artifacts():
     text = (ROOT / "RUN_AFTER_UPLOAD.sh").read_text(encoding="utf-8")
     install_services = text.split("install_services() {", 1)[1].split("\n}", 1)[0]

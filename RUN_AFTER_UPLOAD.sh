@@ -689,6 +689,7 @@ prepare_runtime_storage() {
     "$PROJECT_DIR/runtime/dashboard_access.db-wal" \
     "$PROJECT_DIR/runtime/dashboard_access.db-shm" \
     "$PROJECT_DIR/runtime/dashboard_access.db-journal"; do
+    [[ -L "$path" ]] && die "Private runtime file must not be a symbolic link: ${path##*/}"
     if [[ -e "$path" ]]; then
       chown root:root -- "$path"
       chmod 0600 -- "$path"
@@ -700,6 +701,7 @@ prepare_runtime_storage() {
       "$PROJECT_DIR/$PREVIOUS_DB_FILE-wal" \
       "$PROJECT_DIR/$PREVIOUS_DB_FILE-shm" \
       "$PROJECT_DIR/$PREVIOUS_DB_FILE-journal"; do
+      [[ -L "$path" ]] && die "Private runtime file must not be a symbolic link: ${path##*/}"
       if [[ -e "$path" ]]; then
         chown root:root -- "$path"
         chmod 0600 -- "$path"
@@ -712,6 +714,9 @@ prepare_runtime_storage() {
   session_files=("$PROJECT_DIR"/runtime/sessions/*.session*)
   shopt -u nullglob
   if (( ${#session_files[@]} )); then
+    for path in "${session_files[@]}"; do
+      [[ -L "$path" ]] && die "Private runtime session must not be a symbolic link."
+    done
     chown root:root -- "${session_files[@]}"
     chmod 0600 -- "${session_files[@]}"
   fi
@@ -1684,9 +1689,10 @@ repair_telegram_env() {
 from pathlib import Path
 import os
 import re
+from scripts.private_env import read_private_env, write_private_env
 
 env_path = Path(".env")
-raw = env_path.read_text(encoding="utf-8-sig", errors="replace") if env_path.exists() else ""
+raw = read_private_env(env_path)
 raw = raw.lstrip("\ufeff")
 bad_ids = {"", "0", "12345", "6789", "67890"}
 
@@ -1760,7 +1766,7 @@ for key, value in forced.items():
     if key not in seen:
         lines.append(f"{key}={value}")
 
-env_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+write_private_env("\n".join(lines).rstrip() + "\n", env_path)
 print(f"Telegram configuration ok; authorized admins={len(admin_ids)}.")
 PY
   chown root:root -- "$PROJECT_DIR/.env"
@@ -2470,11 +2476,12 @@ set_env_key() {
   ENV_KEY="$key" ENV_VALUE="$value" "$(python_bin)" - <<'PY'
 import os
 from pathlib import Path
+from scripts.private_env import read_private_env, write_private_env
 
 path = Path(".env")
 key = os.environ["ENV_KEY"]
 value = os.environ["ENV_VALUE"]
-lines = path.read_text(encoding="utf-8-sig", errors="ignore").splitlines() if path.exists() else []
+lines = read_private_env(path).splitlines()
 out = []
 seen = False
 for line in lines:
@@ -2489,7 +2496,7 @@ for line in lines:
     out.append(line)
 if not seen:
     out.append(f"{key}={value}")
-path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
+write_private_env("\n".join(out).rstrip() + "\n", path)
 PY
 }
 
@@ -2498,6 +2505,7 @@ configure_env() {
   require_root_for_systemd
   ensure_venv
   log "Configure .env credentials/settings"
+  ensure_bootstrap_env
   if [[ -s ".env" ]]; then
     local config_backup_dir
     config_backup_dir="$PROJECT_DIR/backups/config_$(date -u +%Y%m%d_%H%M%S)"
@@ -2508,7 +2516,6 @@ configure_env() {
     ok "Existing configuration backed up privately before editing."
     prune_backup_artifacts config
   fi
-  touch .env
   printf 'Leave a field blank to keep the current value.\n'
 
   local api_id api_hash bot_token admin_ids lock_enabled alerts_enabled manual_pull

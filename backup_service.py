@@ -51,12 +51,29 @@ def _integrity(path: Path) -> bool:
             db.close()
 
 
+def _archive_valid(path: Path) -> bool:
+    """Check an existing daily ZIP before treating it as today's backup."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            database = archive.getinfo("messages.db")
+            if database.is_dir() or database.file_size == 0:
+                return False
+            manifest = json.loads(archive.read("backup-manifest.json"))
+            if (not isinstance(manifest, dict) or manifest.get("product") != "Arachne"
+                    or manifest.get("database") != "messages.db"):
+                return False
+            return archive.testzip() is None
+    except (OSError, zipfile.BadZipFile, KeyError, RuntimeError, ValueError, TypeError):
+        return False
+
+
 def create_daily_backup(*, keep_days: int = 7, force: bool = False) -> dict:
     """Create one verified daily ZIP and apply bounded archive retention."""
     BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(MADRID).date().isoformat()
     destination = BACKUPS_DIR / f"arachne-daily-{stamp}.zip"
-    if destination.exists() and not force:
+    replacing_invalid = destination.exists() and not force and not _archive_valid(destination)
+    if destination.exists() and not force and not replacing_invalid:
         return {"created": 0, "path": str(destination), "retained": len(_backup_paths())}
     if not DB_PATH.is_file():
         raise FileNotFoundError(f"Arachne database is missing: {DB_PATH}")
@@ -90,11 +107,13 @@ def create_daily_backup(*, keep_days: int = 7, force: bool = False) -> dict:
                                                    for part in path.relative_to(REPORTS_DIR).parts)):
                         archive.write(path, str(Path("reports") / path.relative_to(REPORTS_DIR)))
             archive.writestr("backup-manifest.json", json.dumps(manifest, indent=2))
+        if not _archive_valid(archive_temp):
+            raise zipfile.BadZipFile("New daily backup archive failed verification")
         archive_temp.replace(destination)
     backups = _backup_paths()
     for old in backups[max(1, min(int(keep_days), 31)):]:
         old.unlink(missing_ok=True)
-    return {"created": 1, "path": str(destination),
+    return {"created": 1, "repaired": int(replacing_invalid), "path": str(destination),
             "retained": len(_backup_paths())}
 
 

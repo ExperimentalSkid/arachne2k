@@ -233,24 +233,29 @@ def test_dashboard_lock_field_is_disabled_until_code_exists(isolated_db):
     assert app.button[0].disabled is True
 
 
-def test_dashboard_session_survives_browser_refresh_via_query_token(isolated_db):
+def test_dashboard_login_keeps_bearer_out_of_url(isolated_db):
+    result = dashboard_auth.generate_dashboard_code(900, 123)
+    app = AppTest.from_file(str(ROOT / "dashboard.py"), default_timeout=20).run()
+    app.text_input[0].set_value(result["code"])
+    app.button[0].click().run()
+
+    assert not app.exception
+    assert any("Session expires in" in str(item.value) for item in app.markdown)
+    assert app.sidebar.radio
+    assert "rt_session" not in app.query_params
+
+
+def test_legacy_query_bearer_is_removed_without_authenticating(isolated_db):
     result = dashboard_auth.generate_dashboard_code(900, 123)
     login = dashboard_auth.consume_dashboard_code(result["code"])
-    assert login["ok"] is True
-
     app = AppTest.from_file(str(ROOT / "dashboard.py"), default_timeout=20)
     app.query_params["rt_session"] = login["session_token"]
     app.run()
 
     assert not app.exception
-    assert any("Session expires in" in str(item.value) for item in app.markdown)
-    assert app.sidebar.radio
-    rotated = app.query_params["rt_session"]
-    if isinstance(rotated, list):
-        rotated = rotated[0]
-    assert rotated != login["session_token"]
-    assert dashboard_auth.validate_dashboard_session(login["session_token"])["ok"] is False
-    assert dashboard_auth.validate_dashboard_session(rotated)["ok"] is True
+    assert not app.sidebar.radio
+    assert "rt_session" not in app.query_params
+    assert dashboard_auth.validate_dashboard_session(login["session_token"])["ok"] is True
 
 
 def test_dashboard_code_is_consumed_atomically_under_concurrency(isolated_db):
@@ -290,6 +295,11 @@ def test_dashboard_login_attempts_are_throttled_per_hashed_client(isolated_db, m
         result["code"], user_agent="Browser A", ip_hint="192.0.2.10",
     ).get("reason") == "rate_limited"
 
+    # User-Agent is client supplied; rotating it must not reset the bucket.
+    assert dashboard_auth.consume_dashboard_code(
+        result["code"], user_agent="Browser B", ip_hint="192.0.2.10",
+    ).get("reason") == "rate_limited"
+
     # A distinct client can still use the valid one-time code.
     login = dashboard_auth.consume_dashboard_code(
         result["code"], user_agent="Browser B", ip_hint="192.0.2.11",
@@ -301,6 +311,21 @@ def test_dashboard_login_attempts_are_throttled_per_hashed_client(isolated_db, m
     assert session["ip_hint"].startswith("sha256:")
     assert "Browser B" not in session["user_agent"]
     assert "192.0.2.11" not in session["ip_hint"]
+
+
+def test_logout_storage_failure_keeps_session_recoverable(isolated_db, monkeypatch):
+    issued = dashboard_auth.generate_dashboard_code(900, 123)
+    login = dashboard_auth.consume_dashboard_code(issued["code"])
+    token = login["session_token"]
+    with monkeypatch.context() as patch:
+        patch.setattr(dashboard_auth, "_access_storage_ready",
+                      lambda: (False, sqlite3.OperationalError("disk I/O error")))
+        with pytest.raises(RuntimeError, match="storage is unavailable"):
+            dashboard_auth.revoke_dashboard_session(token)
+
+    assert dashboard_auth.validate_dashboard_session(token)["ok"] is True
+    dashboard_auth.revoke_dashboard_session(token)
+    assert dashboard_auth.validate_dashboard_session(token)["ok"] is False
 
 
 def test_dashboard_auth_does_not_depend_on_main_crawler_db(isolated_db, monkeypatch):
@@ -438,6 +463,72 @@ def test_telegram_menu_and_callbacks_reject_non_admin(monkeypatch):
     assert mutation_calls == []
 
 
+def test_telegram_group_cannot_create_code_or_export_report(monkeypatch):
+    import arachne
+
+    class Event:
+        sender_id = 111
+        chat_id = -100222
+        is_private = False
+        raw_text = "/dashboard_code 15m"
+        data = b"report"
+
+        def __init__(self):
+            self.responses = []
+
+        async def answer(self):
+            return None
+
+        async def respond(self, *args, **kwargs):
+            self.responses.append((args, kwargs))
+
+    generated = []
+    monkeypatch.setattr(arachne, "_telegram_admin_ids", lambda: {111})
+    monkeypatch.setattr(
+        arachne.dashboard_auth, "generate_dashboard_code",
+        lambda *args, **kwargs: generated.append((args, kwargs)),
+    )
+    command = Event()
+    asyncio.run(arachne.dashboard_code_command(command))
+    callback = Event()
+    asyncio.run(arachne.callback_handler(callback))
+
+    assert generated == []
+    assert "private chat" in command.responses[0][0][0]
+    assert "private chat" in callback.responses[0][0][0]
+
+
+def test_telegram_pending_code_is_scoped_to_private_chat(monkeypatch):
+    import arachne
+
+    class Message:
+        text = "15"
+
+    class Event:
+        sender_id = 111
+        chat_id = -100222
+        is_private = False
+        message = Message()
+
+        async def respond(self, *_args, **_kwargs):
+            raise AssertionError("Group must not receive a dashboard code")
+
+    generated = []
+    monkeypatch.setattr(arachne, "_telegram_admin_ids", lambda: {111})
+    monkeypatch.setattr(
+        arachne.dashboard_auth, "generate_dashboard_code",
+        lambda *args, **kwargs: generated.append((args, kwargs)),
+    )
+    action_key = (111, 111)
+    arachne.pending_action[action_key] = "dashboard_code_minutes"
+    try:
+        asyncio.run(arachne.text_input_handler(Event()))
+        assert arachne.pending_action[action_key] == "dashboard_code_minutes"
+        assert generated == []
+    finally:
+        arachne.pending_action.pop(action_key, None)
+
+
 def test_telegram_menu_keeps_access_controls_when_main_db_is_unavailable(monkeypatch):
     import arachne
 
@@ -461,6 +552,7 @@ def test_pending_media_input_does_not_crash_or_consume_action(monkeypatch):
     class Event:
         sender_id = 111
         chat_id = 111
+        is_private = True
         message = Message()
 
         def __init__(self):
@@ -470,14 +562,15 @@ def test_pending_media_input_does_not_crash_or_consume_action(monkeypatch):
             self.responses.append((args, kwargs))
 
     monkeypatch.setattr(arachne, "_telegram_admin_ids", lambda: {111})
-    arachne.pending_action[111] = "search"
+    action_key = (111, 111)
+    arachne.pending_action[action_key] = "search"
     event = Event()
     try:
         asyncio.run(arachne.text_input_handler(event))
-        assert arachne.pending_action[111] == "search"
+        assert arachne.pending_action[action_key] == "search"
         assert "Send text" in event.responses[0][0][0]
     finally:
-        arachne.pending_action.pop(111, None)
+        arachne.pending_action.pop(action_key, None)
 
 
 def test_custom_code_minutes_work_without_main_database(monkeypatch):
@@ -489,6 +582,7 @@ def test_custom_code_minutes_work_without_main_database(monkeypatch):
     class Event:
         sender_id = 111
         chat_id = 111
+        is_private = True
         message = Message()
 
         def __init__(self):
@@ -509,12 +603,13 @@ def test_custom_code_minutes_work_without_main_database(monkeypatch):
         arachne, "_require_telegram_data",
         lambda _event: (_ for _ in ()).throw(AssertionError("main DB must not be touched")),
     )
-    arachne.pending_action[111] = "dashboard_code_minutes"
+    action_key = (111, 111)
+    arachne.pending_action[action_key] = "dashboard_code_minutes"
     event = Event()
     try:
         asyncio.run(arachne.text_input_handler(event))
     finally:
-        arachne.pending_action.pop(111, None)
+        arachne.pending_action.pop(action_key, None)
 
     assert generated == [(37 * 60, 111)]
     assert "ABCD-EFGH" in event.responses[0][0][0]

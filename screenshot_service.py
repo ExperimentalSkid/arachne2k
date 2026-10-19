@@ -99,15 +99,10 @@ def screenshot_support_status() -> tuple[bool, str]:
 
 
 def _document_equivalent(candidate: str, expected: str) -> bool:
-    """Allow root slash/no-slash normalization while blocking different documents."""
-    def normalize(value: str) -> tuple[str, str, str]:
+    """Allow only the same document, with an empty root path equal to ``/``."""
+    def normalize(value: str) -> tuple[str, str, str, str]:
         parts = urlsplit(value)
-        scheme = (parts.scheme or "http").casefold()
-        host = (parts.netloc or "").casefold()
-        path = parts.path or "/"
-        if path in {"", "/", "/index.html", "/index.htm", "/index.php", "/home"}:
-            path = "/"
-        return scheme, host, path.rstrip("/") or "/"
+        return parts.scheme.casefold(), parts.netloc.casefold(), parts.path or "/", parts.query
     return normalize(candidate) == normalize(expected)
 
 
@@ -132,7 +127,7 @@ def capture_page_screenshot(url: str) -> str | None:
         return None
     allowed, _ = is_fetch_allowed(url, get_bool("ALLOW_CLEARNET_FETCH", False))
     policy_allowed = bool(fetched and fetched["status"] == "crawled" and fetched["active"] == 1
-        and fetched["http_status"] is not None and 200 <= fetched["http_status"] < 400
+        and fetched["http_status"] is not None and 200 <= fetched["http_status"] < 300
         and fetched["last_crawled"] and fetched["storage_policy"] == "safe_summary"
         and fetched["review_status"] not in {"restricted", "filtered"}
         and fetched["screenshot_policy"] == "allowed")

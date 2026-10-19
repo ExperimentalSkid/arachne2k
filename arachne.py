@@ -120,10 +120,13 @@ def _is_dashboard_admin(event) -> bool:
 
 
 async def _require_dashboard_admin(event) -> bool:
-    if _is_dashboard_admin(event):
-        return True
-    await event.respond("Not authorized.")
-    return False
+    if not _is_dashboard_admin(event):
+        await event.respond("Not authorized.")
+        return False
+    if not bool(getattr(event, "is_private", False)):
+        await event.respond("Use a private chat with the bot for admin controls.")
+        return False
+    return True
 
 
 # Session-local chat authorization used only by the bot-added safety handler.
@@ -212,7 +215,12 @@ def build_custom_pattern():
 CUSTOM = build_custom_pattern()
 
 # Track conversational state for multi-step menu actions
-pending_action = {}  # {user_id: "add_keyword" | "remove_keyword" | "add_group" | "remove_group" | "set_threshold"}
+pending_action = {}  # {(user_id, chat_id): pending action}
+
+
+def _pending_action_key(event) -> tuple[int, int]:
+    """Keep replies in the private chat where the action was started."""
+    return int(event.sender_id), int(event.chat_id)
 
 # ==========================================
 # 3. PATTERNS
@@ -2268,7 +2276,10 @@ async def _send_sanitized_diagnostics(event, hours: int = 24) -> bool:
 
 @bot.on(events.NewMessage(pattern=r'^/(?:diagnostics|diagnostic_bundle|ops_bundle)(?:\s|$)'))
 async def diagnostic_bundle_command(event):
-    if not await _require_dashboard_admin(event):
+    # This export is sent to the authenticated user's private Telegram ID,
+    # even when the request originated in a group.
+    if not _is_dashboard_admin(event):
+        await event.respond("Not authorized.")
         return
     parts = event.raw_text.split(maxsplit=1)
     if len(parts) == 2 and (not parts[1].isdigit() or not 1 <= int(parts[1]) <= 168):
@@ -2527,7 +2538,7 @@ async def callback_handler(event):
         await event.respond("Use `/attribution <cluster_id>` for a passive-only correlation profile.", buttons=main_menu_buttons(uid))
     elif data.startswith("dashboard_"):
         if data == "dashboard_code_custom":
-            pending_action[uid] = "dashboard_code_minutes"
+            pending_action[_pending_action_key(event)] = "dashboard_code_minutes"
             await event.respond(
                 "Send how many minutes the one-time dashboard code should remain valid "
                 "(1 to 10080).",
@@ -2611,15 +2622,15 @@ async def callback_handler(event):
         await event.respond(msg, buttons=main_menu_buttons(uid))
 
     elif data == "search":
-        pending_action[uid] = "search"
+        pending_action[_pending_action_key(event)] = "search"
         await event.respond("Envía el texto a buscar:")
 
     elif data == "add_kw":
-        pending_action[uid] = "add_keyword"
+        pending_action[_pending_action_key(event)] = "add_keyword"
         await event.respond("Envía la keyword a añadir (texto plano, sin regex):")
 
     elif data == "rm_kw":
-        pending_action[uid] = "remove_keyword"
+        pending_action[_pending_action_key(event)] = "remove_keyword"
         await event.respond("Envía la keyword exacta a eliminar:")
 
     elif data == "list_kw":
@@ -2630,7 +2641,7 @@ async def callback_handler(event):
             await event.respond(msg, buttons=main_menu_buttons(uid))
 
     elif data == "add_grp":
-        pending_action[uid] = "add_group"
+        pending_action[_pending_action_key(event)] = "add_group"
         await event.respond(
             "Envía el ID del grupo a añadir (formato: `-1001234567890`).\n\n"
             "Para obtener el ID de un grupo: reenvía un mensaje del grupo a @userinfobot, "
@@ -2638,7 +2649,7 @@ async def callback_handler(event):
         )
 
     elif data == "rm_grp":
-        pending_action[uid] = "remove_group"
+        pending_action[_pending_action_key(event)] = "remove_group"
         current = "\n".join(f"• `{g}`" for g in config["active_groups"])
         await event.respond(f"Grupos activos:\n{current}\n\nEnvía el ID a quitar:")
 
@@ -2872,9 +2883,9 @@ async def callback_handler(event):
             json.dump(json_data, f, ensure_ascii=False, indent=2)
 
         # Send both files
-        await bot.send_file(event.chat_id, report_path,
+        await bot.send_file(uid, report_path,
                             caption=f"📄 Informe TXT — {len(rows)} hallazgos")
-        await bot.send_file(event.chat_id, json_path,
+        await bot.send_file(uid, json_path,
                             caption="📄 Informe JSON")
         await event.respond("Informe generado.", buttons=main_menu_buttons(uid))
 
@@ -2972,7 +2983,7 @@ async def callback_handler(event):
         await event.respond(msg[:4000], buttons=main_menu_buttons(uid))
 
     elif data == "user_dossier":
-        pending_action[uid] = "user_dossier"
+        pending_action[_pending_action_key(event)] = "user_dossier"
         await event.respond(
             "Envía el username (con o sin @) para crear el resumen de perfil:"
         )
@@ -3085,7 +3096,7 @@ async def callback_handler(event):
         if cat_name not in COMPILED_CATEGORIES:
             await event.respond("Categoría no existe.", buttons=main_menu_buttons(uid))
             return
-        pending_action[uid] = f"catadd_lang_{cat_name}"
+        pending_action[_pending_action_key(event)] = f"catadd_lang_{cat_name}"
         await event.respond(
             f"➕ Añadir patrón a **{cat_name}**\n\n"
             f"Envía el idioma del patrón: `en`, `es` o `ru`",
@@ -3098,7 +3109,7 @@ async def callback_handler(event):
         if cat_name not in COMPILED_CATEGORIES:
             await event.respond("Categoría no existe.", buttons=main_menu_buttons(uid))
             return
-        pending_action[uid] = f"catrm_lang_{cat_name}"
+        pending_action[_pending_action_key(event)] = f"catrm_lang_{cat_name}"
         await event.respond(
             f"➖ Quitar patrón de **{cat_name}**\n\n"
             f"Envía el idioma: `en`, `es` o `ru`",
@@ -3189,7 +3200,7 @@ async def callback_handler(event):
         return
 
     elif data == "thresh":
-        pending_action[uid] = "set_threshold"
+        pending_action[_pending_action_key(event)] = "set_threshold"
         await event.respond(
             f"Umbral actual: **{config['alert_threshold']}**\n\n"
             f"Bandas:\n• 3+ BAJO\n• 6+ MEDIO\n• 10+ ALTO\n• 15+ CRITICO\n\n"
@@ -3214,25 +3225,28 @@ async def callback_handler(event):
 async def text_input_handler(event):
     if not _is_dashboard_admin(event):
         return
+    if not bool(getattr(event, "is_private", False)):
+        return
     message_text = getattr(event.message, "text", None)
     if message_text and message_text.startswith('/'):
         return  # let command handlers deal with it
 
     uid = event.sender_id
-    if uid not in pending_action:
+    action_key = _pending_action_key(event)
+    if action_key not in pending_action:
         return
 
     if not message_text:
         await event.respond("Send text for this action, or use /menu to cancel and return.")
         return
-    action = pending_action.pop(uid)
+    action = pending_action.pop(action_key)
     text = message_text.strip()
 
     # Dashboard access controls use their own small database and deliberately
     # stay available while the crawler/message database is being repaired.
     if action == "dashboard_code_minutes":
         if not text.isdigit() or not 1 <= int(text) <= 10080:
-            pending_action[uid] = action
+            pending_action[action_key] = action
             await event.respond("Send a whole number from 1 to 10080 minutes.")
             return
         result = dashboard_auth.generate_dashboard_code(int(text) * 60, uid)
@@ -3240,7 +3254,7 @@ async def text_input_handler(event):
         return
 
     if not await _require_telegram_data(event):
-        pending_action[uid] = action
+        pending_action[action_key] = action
         return
 
     global custom_keywords, CUSTOM
@@ -3422,7 +3436,7 @@ async def text_input_handler(event):
         for title, n, trig, gmx in groups[:5]:
             summary += f"• {title}: {n} msgs ({trig} 🚩, max {gmx})\n"
         await event.respond(summary[:3500])
-        await bot.send_file(event.chat_id, path_txt,
+        await bot.send_file(uid, path_txt,
                             caption=f"📑 Resumen completo de @{username}")
         await event.respond("Listo.", buttons=main_menu_buttons(uid))
 
@@ -3492,7 +3506,7 @@ async def forwarded_group_detect(event):
         return
 
     # Offer to add
-    pending_action[event.sender_id] = f"confirm_add_{gid}"
+    pending_action[_pending_action_key(event)] = f"confirm_add_{gid}"
     await event.respond(
         f"📥 Detectado grupo:\n\n"
         f"**{title}**\n`{gid}`\n\n"

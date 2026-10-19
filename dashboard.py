@@ -17,6 +17,8 @@ from dashboard_pages.workspace import (
     main as _render_workspace,
 )
 
+# Legacy URLs may still contain this key. Never accept or create a bearer token
+# in a URL: browser history and copied links can expose it.
 DASHBOARD_SESSION_QUERY_KEY = "rt_session"
 _SESSION_EXIT_STATE_KEY = "_dashboard_show_session_exit"
 
@@ -30,34 +32,17 @@ def _format_remaining(seconds: int) -> str:
     return f"{minutes}m {secs:02d}s"
 
 
-def _query_session_token() -> str | None:
+def _clear_legacy_query_session_token() -> None:
     try:
-        value = st.query_params.get(DASHBOARD_SESSION_QUERY_KEY)
-    except Exception:
-        return None
-    if isinstance(value, list):
-        value = value[0] if value else None
-    value = str(value or "").strip()
-    return value or None
-
-
-def _set_query_session_token(token: str | None) -> None:
-    try:
-        if token:
-            st.query_params[DASHBOARD_SESSION_QUERY_KEY] = token
-        elif DASHBOARD_SESSION_QUERY_KEY in st.query_params:
+        if DASHBOARD_SESSION_QUERY_KEY in st.query_params:
             del st.query_params[DASHBOARD_SESSION_QUERY_KEY]
     except Exception:
         return
 
 
-def _current_session_token() -> tuple[str | None, bool]:
-    """Return the current token and whether it came from the URL on this run."""
-    state_token = str(st.session_state.get("dashboard_session_token") or "").strip()
-    if state_token:
-        return state_token, False
-    query_token = _query_session_token()
-    return query_token, bool(query_token)
+def _current_session_token() -> str | None:
+    """The bearer exists only in Streamlit's server-side session state."""
+    return str(st.session_state.get("dashboard_session_token") or "").strip() or None
 
 
 def _clear_dashboard_session_ui_state() -> None:
@@ -66,7 +51,7 @@ def _clear_dashboard_session_ui_state() -> None:
     st.session_state.pop("dashboard_session_expires_at", None)
     st.session_state.pop("dashboard_principal", None)
     st.session_state.pop(_SESSION_EXIT_STATE_KEY, None)
-    _set_query_session_token(None)
+    _clear_legacy_query_session_token()
 
 
 def _store_dashboard_principal(status: dict) -> None:
@@ -104,7 +89,11 @@ def _render_authenticated_session_control() -> None:
             key="end-secure-session",
             use_container_width=True,
         ):
-            dashboard_auth.revoke_dashboard_session(token)
+            try:
+                dashboard_auth.revoke_dashboard_session(token)
+            except RuntimeError:
+                st.error("Could not end the session. Access storage is unavailable; try again shortly.")
+                return
             _clear_dashboard_session_ui_state()
             st.rerun()
 
@@ -217,13 +206,13 @@ def _render_unlock() -> None:
             st.session_state["dashboard_session_token"] = result["session_token"]
             st.session_state["dashboard_session_expires_at"] = result["expires_at"]
             _store_dashboard_principal(result)
-            _set_query_session_token(result["session_token"])
             st.rerun()
         st.error(result.get("error") or "Invalid, expired, or already-used access code.")
 
 
 def _dashboard_access_allowed() -> bool:
-    token, restored_from_query = _current_session_token()
+    _clear_legacy_query_session_token()
+    token = _current_session_token()
     status = dashboard_auth.validate_dashboard_session(token)
     if status.get("ok"):
         _store_dashboard_principal(status)
@@ -233,22 +222,6 @@ def _dashboard_access_allowed() -> bool:
             _clear_dashboard_session_ui_state()
             _store_dashboard_principal(status)
             return True
-        if restored_from_query:
-            rotated = dashboard_auth.rotate_dashboard_session(token)
-            if not rotated.get("ok"):
-                _clear_dashboard_session_ui_state()
-                _render_unlock()
-                return False
-            token = rotated["session_token"]
-            status = dashboard_auth.validate_dashboard_session(token)
-            if not status.get("ok"):
-                _clear_dashboard_session_ui_state()
-                _render_unlock()
-                return False
-            _store_dashboard_principal(status)
-            st.session_state["dashboard_session_token"] = token
-            st.session_state["dashboard_session_expires_at"] = rotated["expires_at"]
-            _set_query_session_token(token)
         if status.get("lock_enabled"):
             st.session_state[_SESSION_EXIT_STATE_KEY] = True
             remaining = _format_remaining(int(status.get("remaining_seconds") or 0))

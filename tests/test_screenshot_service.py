@@ -1,10 +1,24 @@
 import sys
 import types
 
+import pytest
+
 import storage
 import screenshot_service
 from screenshot_service import capture_page_screenshot, has_screenshot, screenshot_path_for_url, screenshot_support_status
 from universal_classifier import classify_url_prefetch
+
+
+@pytest.mark.parametrize("candidate", [
+    "http://" + "s" * 56 + ".onion/?page=2",
+    "http://" + "s" * 56 + ".onion/home",
+    "http://" + "s" * 56 + ".onion/index.html",
+    "http://" + "s" * 56 + ".onion//",
+])
+def test_preview_document_match_rejects_redirected_documents(candidate):
+    url = "http://" + "s" * 56 + ".onion/"
+    assert screenshot_service._document_equivalent(candidate, url) is False
+    assert screenshot_service._document_equivalent(url, url) is True
 
 
 def test_screenshots_are_deterministic_and_disabled_by_default(monkeypatch):
@@ -116,10 +130,30 @@ def test_enabled_capture_disables_javascript_downloads_and_all_subresources(isol
         Route(Request(url + "style.css", "stylesheet")),
         Route(Request(url + "logo.png", "image")),
         Route(Request("http://" + "t" * 56 + ".onion/", "document", True)),
+        Route(Request(url + "?page=2", "document", True)),
+        Route(Request(url + "home", "document", True)),
     ]
     for route in requests:
         observed["handler"](route)
-    assert [route.action for route in requests] == ["continue", "abort", "abort", "abort"]
+    assert [route.action for route in requests] == [
+        "continue", "abort", "abort", "abort", "abort", "abort",
+    ]
+
+
+def test_redirect_response_is_not_preview_eligible(isolated_db, monkeypatch):
+    url = "http://" + "s" * 56 + ".onion/"
+    policy = classify_url_prefetch(url)
+    policy.update(primary_category="news_media", category="news_media", active=1,
+                  storage_policy="safe_summary", review_status="monitor",
+                  screenshot_policy="allowed", queue_policy="expand")
+    storage.insert_or_update_onion_url(url, status="crawled", policy=policy)
+    with storage.get_db() as db:
+        db.execute("""UPDATE onion_urls SET status='crawled',active=1,http_status=302,
+          last_crawled=?,screenshot_policy='allowed' WHERE url=?""", (storage.utc_now_iso(), url))
+    monkeypatch.setattr(screenshot_service, "screenshot_support_status", lambda: (True, "test"))
+
+    assert capture_page_screenshot(url) is None
+    assert storage.get_page_preview_state(url)["blocked_reason"] == "universal_screenshot_policy"
 
 
 def test_capture_helper_does_not_release_preview_worker_claim(isolated_db, tmp_path, monkeypatch):

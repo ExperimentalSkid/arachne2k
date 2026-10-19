@@ -15,6 +15,7 @@ import signal
 import threading
 import time
 from contextlib import contextmanager
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
@@ -68,6 +69,11 @@ ENRICHMENT_RESTRICTED_CATEGORIES = {"adult_filtered", "adult_restricted", "sever
 DECODING_META_SCAN_BYTES = 16_384
 LINK_CONTEXT_VARIANT_LIMIT = 8
 LINK_OCCURRENCE_COUNT_LIMIT = 65_535
+_PASSIVE_HEADER_NAMES = {"server": "Server", "x-powered-by": "X-Powered-By"}
+_PASSIVE_HEADER_VALUE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._()/+-]{0,159}\Z")
+_PRIVATE_HEADER_MARKER_RE = re.compile(
+    r"(?i)\b(?:auth|bearer|cookie|password|secret|session|token|api[-_]?key)\b|\.onion\b"
+)
 
 _HTTP_CHARSET_RE = re.compile(
     r"(?:^|;)\s*charset\s*=\s*(?:\"([^\"]{1,80})\"|'([^']{1,80})'|([^;\s]{1,80}))",
@@ -826,6 +832,20 @@ def _session() -> requests.Session:
     return create_onion_session(proxy_url=requests_proxy_url(), prepare=False)
 
 
+def _passive_response_headers(headers: Mapping[str, str]) -> dict[str, str]:
+    """Keep only short product headers needed by passive exposure extraction."""
+    safe: dict[str, str] = {}
+    for raw_name, value in headers.items():
+        name = _PASSIVE_HEADER_NAMES.get(str(raw_name).casefold())
+        if name is None or value is None:
+            continue
+        text = str(value).strip()
+        if (_PASSIVE_HEADER_VALUE_RE.fullmatch(text)
+                and not _PRIVATE_HEADER_MARKER_RE.search(text)):
+            safe[name] = text
+    return safe
+
+
 def _read_bounded(response: requests.Response, limit: int, deadline: float | None = None) -> bytes:
     expected = response.headers.get("Content-Length")
     if expected and expected.isdigit() and int(expected) > limit:
@@ -1546,7 +1566,7 @@ def fetch_one(worker_id: str | None = None) -> bool:
         body = _read_bounded(response, get_int("ONION_MAX_PAGE_BYTES", 1_000_000),
                              deadline=fetch_started + total_fetch_timeout)
         title, meta_text, visible_text, link_records, page_structure = _parse(body, content_type or "", url)
-        headers = dict(response.headers)
+        headers = _passive_response_headers(response.headers)
         response_status = response.status_code
         storage.store_fetched_page_snapshot(
             int(item["id"]), url, worker_id=worker_id, response_status=response_status,
@@ -1562,7 +1582,7 @@ def fetch_one(worker_id: str | None = None) -> bool:
         error_count = int(item.get("error_count") or 0) + 1
         dead = error_count >= 4
         updated = storage.mark_onion_error(
-            url, f"{type(exc).__name__}: {str(exc)[:300]}",
+            url, type(exc).__name__,
             None if dead else (_future(days=3) if error_count >= 3 else _future(hours=6)),
             dead=dead, worker_id=worker_id,
         )
@@ -2131,7 +2151,7 @@ def _process_one_impl() -> bool:
         body = _read_bounded(response, get_int("ONION_MAX_PAGE_BYTES", 1_000_000),
                              deadline=fetch_started + total_fetch_timeout)
         title, meta_text, visible_text, link_records, page_structure = _parse(body, content_type or "", url)
-        headers = dict(response.headers)
+        headers = _passive_response_headers(response.headers)
         response_status = response.status_code
         response.close()
         storage.update_worker_state("classifying", "Classifying fetched page", url,
@@ -2513,7 +2533,7 @@ def _process_one_impl() -> bool:
         error_count = int(item.get("error_count") or 0) + 1
         dead = error_count >= 4
         storage.mark_onion_error(
-            url, f"{type(exc).__name__}: {str(exc)[:300]}",
+            url, type(exc).__name__,
             None if dead else (_future(days=3) if error_count >= 3 else _future(hours=6)),
             dead=dead, worker_id=worker_id,
         )

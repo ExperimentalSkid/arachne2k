@@ -332,3 +332,30 @@ def test_approved_provider_transport_returns_only_bounded_safe_response(monkeypa
     assert session.calls[0][1]["headers"] == {"Accept": "application/pgp-keys"}
     assert session.calls[0][1]["allow_redirects"] is False
     assert session.calls[0][1]["stream"] is True
+
+
+def test_provider_stream_stops_after_total_deadline_even_on_empty_chunks(monkeypatch):
+    monkeypatch.setattr(safe_transport, "get_bool", lambda _key, default=False: True)
+
+    class TrickleResponse(_TransportResponse):
+        def iter_content(self, chunk_size=1):
+            del chunk_size
+            yield b""
+            yield b"late"
+
+    response = TrickleResponse()
+    request = providers.ProviderRequest(
+        provider=providers.OPENPGP_PROVIDER_NAME,
+        url=providers.OPENPGP_ENDPOINT + FINGERPRINT,
+        headers={"Accept": "application/pgp-keys"},
+    )
+    clock = iter((0.0, safe_transport.PROVIDER_TOTAL_TIMEOUT_SECONDS + 1.0))
+    monkeypatch.setattr(safe_transport.time, "monotonic", lambda: next(clock))
+
+    try:
+        safe_transport.fetch_public_provider(request, session=_TransportSession(response))
+    except TimeoutError as exc:
+        assert "total time limit" in str(exc)
+    else:
+        raise AssertionError("trickling provider stream must stop at the deadline")
+    assert response.closed is True
