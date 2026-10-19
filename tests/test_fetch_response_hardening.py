@@ -77,7 +77,10 @@ def test_fetch_error_persists_only_safe_exception_type(isolated_db, monkeypatch,
     )
     monkeypatch.setattr(onion_worker, "_session", lambda: _Session(error=secret_error))
 
-    assert getattr(onion_worker, worker)("fetch-error-test")
+    if worker == "fetch_one":
+        assert onion_worker.fetch_one("fetch-error-test")
+    else:
+        assert onion_worker.process_one()
     with storage.get_db() as db:
         row = db.execute("SELECT last_error FROM onion_urls WHERE url=?", (URL,)).fetchone()
     assert row["last_error"] == "RuntimeError"

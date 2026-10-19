@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 def read_private_env(path: Path = Path(".env")) -> str:
+    """Read a regular environment file without following a symlink."""
     path = Path(path)
     if path.is_symlink():
         raise ValueError(".env must be a private regular file, not a symbolic link")
@@ -22,6 +23,7 @@ def read_private_env(path: Path = Path(".env")) -> str:
 
 
 def write_private_env(text: str, path: Path = Path(".env")) -> None:
+    """Replace a regular environment file atomically with mode 0600."""
     path = Path(path)
     if path.is_symlink() or (path.exists() and not path.is_file()):
         raise ValueError(".env must be a private regular file, not a symbolic link")
