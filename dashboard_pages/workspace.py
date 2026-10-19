@@ -28,7 +28,8 @@ from config_loader import (effective_config_value, get_bool, get_int, get_str, r
 from passive_attribution import build_attribution_profile
 from paths import BASE_DIR, REPORTS_DIR
 from log_redaction import redact_for_log
-from report_builder import build_cluster_report, build_site_card_report, build_url_report
+from report_builder import (build_cluster_report, build_site_card_report, build_url_report,
+                            neutralize_report_embeds)
 from safety_policy import is_fetch_allowed, is_onion_url, normalize_url, redact_sensitive
 from screenshot_service import screenshot_support_status
 from tor_circuits import circuit_policy_status
@@ -489,9 +490,6 @@ def _open_workspace_page(page: str) -> None:
     st.session_state.pop("directory_origin_page", None)
     try:
         st.query_params["nav"] = PAGE_SLUGS[page]
-        session_token = str(st.session_state.get("dashboard_session_token") or "").strip()
-        if session_token:
-            st.query_params["rt_session"] = session_token
     except Exception:
         pass
 
@@ -2893,7 +2891,7 @@ def _simple_reports(st, query) -> None:
             )
         with st.expander(_l(st, "Read report", "Leer informe")):
             if allowed:
-                st.markdown(report_text)
+                st.markdown(neutralize_report_embeds(report_text))
             else: st.warning(_l(st, "This report file is not available at its saved location.",
                                   "El archivo del informe no está disponible en la ubicación guardada."))
 

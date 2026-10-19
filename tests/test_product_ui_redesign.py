@@ -140,7 +140,7 @@ def test_explicit_navigation_leaves_a_full_page_site_detail(monkeypatch):
     assert "directory_dialog_edit" not in fake.session_state
 
 
-def test_navigation_preserves_theme_session_and_unrelated_query_parameters(monkeypatch):
+def test_navigation_preserves_theme_and_unrelated_query_parameters_without_session_token(monkeypatch):
     fake = _FakeStreamlit()
     fake.session_state["dashboard_session_token"] = "opaque-session-token"
     fake.query_params.update({"theme": "light", "keep": "unchanged", "nav": "home"})
@@ -153,8 +153,8 @@ def test_navigation_preserves_theme_session_and_unrelated_query_parameters(monke
         "theme": "light",
         "keep": "unchanged",
         "nav": "quality",
-        "rt_session": "opaque-session-token",
     }
+    assert fake.session_state["dashboard_session_token"] == "opaque-session-token"
 
 
 def test_direct_navigation_slug_opens_the_requested_page_and_keeps_query_context(isolated_db):

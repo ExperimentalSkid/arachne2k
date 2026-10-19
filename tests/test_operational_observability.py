@@ -693,6 +693,7 @@ def test_telegram_diagnostic_button_stays_available_when_main_db_is_broken(
     class Event:
         sender_id = 222
         chat_id = 222
+        is_private = True
         data = b"ops_diagnostics"
 
         async def answer(self):

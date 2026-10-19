@@ -40,3 +40,17 @@ def test_restricted_item_report_contains_metadata_but_no_unsafe_fields(isolated_
         report_builder.build_url_report(url, "pytest")
     with storage.get_db() as db:
         assert db.execute("SELECT COUNT(*) FROM evidence_reports").fetchone()[0] == 0
+
+
+def test_report_title_cannot_embed_remote_media(isolated_db, tmp_path, monkeypatch):
+    monkeypatch.setattr(report_builder, "REPORTS_DIR", tmp_path)
+    url = "http://" + "a" * 56 + ".onion/directory"
+    storage.insert_or_update_onion_url(url)
+    title = r"Proof \\![remote](https://example.invalid/track) <img src='https://example.invalid/p'>"
+    with storage.get_db() as db:
+        db.execute("UPDATE onion_urls SET title=? WHERE url=?", (title, url))
+
+    body = Path(report_builder.build_url_report(url, "pytest")).read_text(encoding="utf-8")
+    assert r"\\\![remote](https://example.invalid/track)" in body
+    assert "&lt;img src=" in body
+    assert "<img" not in body

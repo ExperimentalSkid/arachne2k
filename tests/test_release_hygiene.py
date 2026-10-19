@@ -221,6 +221,51 @@ def _small_source_tree(tmp_path):
     return root
 
 
+def test_release_rejects_unapproved_source_shaped_private_file(tmp_path):
+    root = _small_source_tree(tmp_path)
+    manifest_path = root / MANIFEST_NAME
+    original = write_source_manifest(root, manifest_path)
+    (root / "credentials.json").write_text('{"token":"synthetic-secret"}\n', encoding="utf-8")
+
+    with pytest.raises(ManifestValidationError, match="unapproved source files"):
+        build_release(tmp_path / "release.zip", root=root)
+    with pytest.raises(ManifestValidationError, match="unapproved source files"):
+        write_source_manifest(root, manifest_path)
+    assert json.loads(manifest_path.read_text(encoding="utf-8")) == original
+    assert not (tmp_path / "release.zip").exists()
+
+
+def test_new_source_path_requires_explicit_manifest_approval(tmp_path):
+    root = _small_source_tree(tmp_path)
+    manifest_path = root / MANIFEST_NAME
+    write_source_manifest(root, manifest_path)
+    (root / "new_module.py").write_text("VALUE = 1\n", encoding="utf-8")
+
+    with pytest.raises(ManifestValidationError, match="unapproved source files"):
+        write_source_manifest(root, manifest_path)
+    refreshed = write_source_manifest(root, manifest_path,
+                                      approved_paths=["new_module.py"])
+    assert "new_module.py" in {item["path"] for item in refreshed["files"]}
+    output, _ = build_release(tmp_path / "release.zip", root=root)
+    with zipfile.ZipFile(output) as archive:
+        assert archive.read("arachne/new_module.py") == b"VALUE = 1\n"
+
+
+def test_deleted_source_path_requires_explicit_manifest_retirement(tmp_path):
+    root = _small_source_tree(tmp_path)
+    manifest_path = root / MANIFEST_NAME
+    write_source_manifest(root, manifest_path)
+    (root / "app.py").unlink()
+
+    with pytest.raises(ManifestValidationError, match="approved source files are missing"):
+        write_source_manifest(root, manifest_path)
+    refreshed = write_source_manifest(root, manifest_path, retired_paths=["app.py"])
+    assert {item["path"] for item in refreshed["files"]} == {"README.md"}
+    output, _ = build_release(tmp_path / "release.zip", root=root)
+    with zipfile.ZipFile(output) as archive:
+        assert "arachne/app.py" not in archive.namelist()
+
+
 def test_source_manifest_verifies_exact_selected_set_and_excludes_scratch(tmp_path):
     root = _small_source_tree(tmp_path)
     scratch = root / ".pytest-local" / "tests"

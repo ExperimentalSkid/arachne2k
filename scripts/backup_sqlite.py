@@ -111,9 +111,16 @@ def snapshot_database(db_path: Path, target: Path) -> Path:
 def backup_database(db_path: Path, backup_dir: Path, *, keep: int = 14) -> Path:
     """Create a timestamped SQLite snapshot and prune older matching snapshots."""
     backup_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
-    target = backup_dir / f"{db_path.stem}_{timestamp}.db"
-    snapshot_database(db_path, target)
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
+    descriptor, reserved = tempfile.mkstemp(
+        prefix=f"{db_path.stem}_{timestamp}_", suffix=".db", dir=backup_dir)
+    os.close(descriptor)
+    target = Path(reserved)
+    try:
+        snapshot_database(db_path, target)
+    except Exception:
+        target.unlink(missing_ok=True)
+        raise
     backups = sorted(backup_dir.glob(f"{db_path.stem}_*.db"), key=lambda path: path.stat().st_mtime, reverse=True)
     for old in backups[max(1, int(keep)):]:
         old.unlink(missing_ok=True)

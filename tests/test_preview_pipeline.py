@@ -330,7 +330,7 @@ def test_missing_chromium_is_reported_separately_from_disabled(monkeypatch):
 
 def test_exact_root_canonicalization_allows_same_document_root():
     assert screenshot_service._document_equivalent(f"http://{HOST}", f"http://{HOST}/")
-    assert screenshot_service._document_equivalent(f"http://{HOST}/index.php", f"http://{HOST}/")
+    assert not screenshot_service._document_equivalent(f"http://{HOST}/index.php", f"http://{HOST}/")
     assert not screenshot_service._document_equivalent(f"http://{HOST}/style.css", f"http://{HOST}/")
     assert not screenshot_service._document_equivalent(f"http://{'q' * 56}.onion/", f"http://{HOST}/")
 

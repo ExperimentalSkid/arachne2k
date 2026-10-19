@@ -107,11 +107,60 @@ def _allowed(path: Path, root: Path = ROOT) -> bool:
     return top in TREE_RULES and path.suffix.casefold() in TREE_RULES[top]
 
 
-def release_files(root: Path = ROOT) -> list[Path]:
-    """Return the one authoritative, deterministic source file set."""
+def _candidate_files(root: Path) -> list[Path]:
+    """Discover source-shaped files, including unapproved additions."""
     root = Path(root).resolve()
     return sorted((path for path in root.rglob("*") if _allowed(path, root)),
                   key=lambda path: path.relative_to(root).as_posix())
+
+
+def release_files(root: Path = ROOT, *, approved_paths: Iterable[str] = (),
+                  retired_paths: Iterable[str] = ()) -> list[Path]:
+    """Select only paths already recorded in the source manifest.
+
+    The manifest's paths are the reviewed inventory. Its hashes are refreshed
+    from current files when a new release is made. New source-shaped files must
+    be approved explicitly; a stray JSON, Markdown, or Python file cannot be
+    bundled merely because its suffix is allowed.
+    """
+    root = Path(root).resolve()
+    candidates = _candidate_files(root)
+    manifest_path = root / MANIFEST_NAME
+    if not manifest_path.is_file():
+        # Small synthetic source trees can bootstrap a first manifest. The
+        # checked-in application always ships its existing manifest.
+        if root == ROOT:
+            raise ManifestValidationError("SOURCE_MANIFEST.json is required to select release files")
+        return candidates
+    if manifest_path.is_symlink():
+        raise ManifestValidationError("SOURCE_MANIFEST.json must not be a symlink")
+    baseline = {item["path"] for item in load_manifest(manifest_path)["files"]}
+    additions = {_safe_manifest_path(value) for value in approved_paths}
+    retirements = {_safe_manifest_path(value) for value in retired_paths}
+    if additions & baseline:
+        raise ManifestValidationError("source path is already approved: " +
+                                      ", ".join(sorted(additions & baseline)))
+    selected = {path.relative_to(root).as_posix(): path for path in candidates}
+    unknown_retirements = sorted(retirements - baseline)
+    if unknown_retirements:
+        raise ManifestValidationError("source path is not approved: " +
+                                      ", ".join(unknown_retirements))
+    still_present = sorted(retirements & set(selected))
+    if still_present:
+        raise ManifestValidationError("retired source path still exists: " +
+                                      ", ".join(still_present))
+    invalid = sorted(additions - set(selected))
+    if invalid:
+        raise ManifestValidationError("new source path is missing or excluded: " + ", ".join(invalid))
+    remaining = baseline - retirements
+    missing = sorted(remaining - set(selected))
+    if missing:
+        raise ManifestValidationError("approved source files are missing: " + ", ".join(missing))
+    unexpected = sorted(set(selected) - remaining - additions)
+    if unexpected:
+        raise ManifestValidationError(
+            "unapproved source files require explicit review: " + ", ".join(unexpected))
+    return [selected[relative] for relative in sorted(remaining | additions)]
 
 
 def _manifest_entry(path: Path, root: Path) -> dict:
@@ -130,13 +179,15 @@ def _tree_digest(entries: Iterable[dict]) -> str:
     return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
 
 
-def build_source_manifest(root: Path = ROOT, *, files: list[Path] | None = None) -> dict:
+def build_source_manifest(root: Path = ROOT, *, files: list[Path] | None = None,
+                          approved_paths: Iterable[str] = (),
+                          retired_paths: Iterable[str] = ()) -> dict:
     """Build a content-derived manifest; it never includes itself or runtime state."""
     root = Path(root).resolve()
-    selected = release_files(root) if files is None else sorted(
-        (Path(path).resolve() for path in files),
-        key=lambda path: path.relative_to(root).as_posix(),
-    )
+    selected = release_files(root, approved_paths=approved_paths,
+                             retired_paths=retired_paths)
+    if files is not None and [Path(path).resolve() for path in files] != selected:
+        raise ManifestValidationError("manifest files do not match the approved source selection")
     entries = [_manifest_entry(path, root) for path in selected]
     return {
         "schema_version": MANIFEST_SCHEMA_VERSION,
@@ -155,11 +206,14 @@ def manifest_bytes(manifest: dict) -> bytes:
     return (json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=True) + "\n").encode("utf-8")
 
 
-def write_source_manifest(root: Path = ROOT, destination: Path | None = None) -> dict:
+def write_source_manifest(root: Path = ROOT, destination: Path | None = None,
+                          *, approved_paths: Iterable[str] = (),
+                          retired_paths: Iterable[str] = ()) -> dict:
     """Atomically write the authoritative manifest beside the selected source."""
     root = Path(root).resolve()
     destination = Path(destination or root / MANIFEST_NAME).resolve()
-    manifest = build_source_manifest(root)
+    manifest = build_source_manifest(root, approved_paths=approved_paths,
+                                     retired_paths=retired_paths)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
     try:
@@ -271,7 +325,7 @@ def load_manifest(path: Path) -> dict:
 def _source_differences(root: Path, manifest: dict) -> tuple[dict[str, Path], list[str], list[str], list[str]]:
     """Inspect one selected source tree without mutating it."""
     expected = {item["path"]: item for item in manifest["files"]}
-    selected = {path.relative_to(root).as_posix(): path for path in release_files(root)}
+    selected = {path.relative_to(root).as_posix(): path for path in _candidate_files(root)}
     missing = sorted(set(expected) - set(selected))
     extra = sorted(set(selected) - set(expected))
     changed: list[str] = []
@@ -521,7 +575,42 @@ def main() -> None:
     )
     parser.add_argument("--audit-workspace", action="store_true")
     parser.add_argument("--fail-on-dirty-workspace", action="store_true")
+    parser.add_argument(
+        "--refresh-manifest", action="store_true",
+        help="Refresh hashes for the already approved source paths",
+    )
+    parser.add_argument(
+        "--approve-source", action="append", default=[], metavar="PATH",
+        help="Review and add one new source path to SOURCE_MANIFEST.json; repeat for multiple files",
+    )
+    parser.add_argument(
+        "--retire-source", action="append", default=[], metavar="PATH",
+        help="Remove one deleted approved path from SOURCE_MANIFEST.json; repeat as needed",
+    )
     options = parser.parse_args()
+    if options.refresh_manifest:
+        if (options.approve_source or options.retire_source or options.verify_source is not None
+                or options.verify_archive is not None or options.reconcile_source is not None
+                or options.audit_workspace or options.fail_on_dirty_workspace):
+            parser.error("--refresh-manifest cannot be combined with other modes")
+        manifest = write_source_manifest(ROOT)
+        print(json.dumps({"manifest": str(ROOT / MANIFEST_NAME),
+                          "file_count": manifest["file_count"],
+                          "tree_sha256": manifest["tree_sha256"]}, sort_keys=True))
+        return
+    if options.approve_source or options.retire_source:
+        if (options.verify_source is not None or options.verify_archive is not None
+                or options.reconcile_source is not None or options.audit_workspace
+                or options.fail_on_dirty_workspace):
+            parser.error("source path changes cannot be combined with verification or audit modes")
+        manifest = write_source_manifest(ROOT, approved_paths=options.approve_source,
+                                         retired_paths=options.retire_source)
+        print(json.dumps({"manifest": str(ROOT / MANIFEST_NAME),
+                          "approved": sorted(options.approve_source),
+                          "retired": sorted(options.retire_source),
+                          "file_count": manifest["file_count"],
+                          "tree_sha256": manifest["tree_sha256"]}, sort_keys=True))
+        return
     if options.verify_source is not None:
         manifest_path = options.verify_source.expanduser().resolve()
         print(json.dumps(verify_source(manifest_path.parent, manifest_path), sort_keys=True))

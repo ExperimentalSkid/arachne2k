@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
+import time
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
@@ -26,6 +27,7 @@ PROVIDER_HEADERS = {
     "Accept-Language": "en",
     "DNT": "1",
 }
+PROVIDER_TOTAL_TIMEOUT_SECONDS = 30.0
 _PROVIDER_NAMES = {
     "openpgp_exact",
     "rdap_exact_domain",
@@ -191,6 +193,7 @@ def fetch_public_provider(
     owned = session is None
     current = session or create_public_provider_session()
     response = None
+    deadline = time.monotonic() + PROVIDER_TOTAL_TIMEOUT_SECONDS
     try:
         response = current.get(
             str(getattr(request, "url")),
@@ -202,11 +205,15 @@ def fetch_public_provider(
         )
         body = bytearray()
         for chunk in response.iter_content(chunk_size=16 * 1024):
+            if time.monotonic() > deadline:
+                raise TimeoutError("OPSEC: provider response exceeded total time limit")
             if not chunk:
                 continue
             body.extend(chunk)
             if len(body) > max_bytes:
                 raise ValueError("OPSEC: provider response exceeded byte limit")
+        if time.monotonic() > deadline:
+            raise TimeoutError("OPSEC: provider response exceeded total time limit")
         safe_headers = {}
         for name in ("Content-Type", "Retry-After"):
             value = response.headers.get(name)

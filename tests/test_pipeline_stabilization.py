@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
@@ -213,3 +214,25 @@ def test_sqlite_backup_uses_snapshot_and_retention(tmp_path):
     with sqlite3.connect(second) as db:
         assert db.execute("SELECT value FROM sample").fetchone()[0] == "ok"
     assert isinstance(first, Path)
+
+
+def test_two_backups_in_same_minute_keep_distinct_snapshots(tmp_path):
+    db_path = tmp_path / "messages.db"
+    with closing(sqlite3.connect(db_path)) as db:
+        with db:
+            db.execute("CREATE TABLE sample(value TEXT)")
+            db.execute("INSERT INTO sample(value) VALUES('first')")
+    backup_dir = tmp_path / "backups"
+
+    first = backup_database(db_path, backup_dir, keep=2)
+    with closing(sqlite3.connect(db_path)) as db:
+        with db:
+            db.execute("UPDATE sample SET value='second'")
+    second = backup_database(db_path, backup_dir, keep=2)
+
+    assert first != second
+    assert first.is_file() and second.is_file()
+    with closing(sqlite3.connect(first)) as db:
+        assert db.execute("SELECT value FROM sample").fetchone()[0] == "first"
+    with closing(sqlite3.connect(second)) as db:
+        assert db.execute("SELECT value FROM sample").fetchone()[0] == "second"

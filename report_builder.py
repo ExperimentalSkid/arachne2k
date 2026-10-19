@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
@@ -16,6 +17,17 @@ SAFETY_NOTE = ("This report contains safe metadata, hashes, passive correlations
                "summaries, and short approved snippets only. It contains no downloaded files, credentials, "
                "illegal media, transaction instructions, exploit material, or restricted page content.")
 TOOL_NAME = "Arachne"
+
+
+def neutralize_report_embeds(body: str) -> str:
+    """Keep untrusted report fields from loading remote media in Markdown viewers."""
+    # Reports are also rendered by Streamlit. A page title or analyst note can
+    # contain Markdown even after snippet redaction, including image syntax.
+    def escape_image(match: re.Match[str]) -> str:
+        slashes = match.group(1)
+        return slashes + ("" if len(slashes) % 2 else "\\") + "!["
+
+    return re.sub(r"(\\*)!\[", escape_image, body).replace("<", "&lt;")
 
 
 def _list(values) -> str:
@@ -157,7 +169,7 @@ Operational Site Review Report
 """
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     output = REPORTS_DIR / f"report_site_card_{card['canonical_site_id']}_{generated.strftime('%Y%m%d_%H%M%S')}.md"
-    output.write_text(body, encoding="utf-8")
+    output.write_text(neutralize_report_embeds(body), encoding="utf-8")
     storage.insert_evidence_report("site_card", str(output), generated_by, site_card_id=site_card_id)
     with storage.get_db() as db:
         db.execute("""UPDATE site_cards SET report_status='generated',report_generated_at=?,
@@ -216,7 +228,7 @@ def build_url_report(url: str, generated_by: str = "local_operator") -> str:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256(url.encode("utf-8", "ignore")).hexdigest()[:12]
     output = REPORTS_DIR / f"report_item_{digest}_{generated.strftime('%Y%m%d_%H%M%S')}.md"
-    output.write_text(body, encoding="utf-8")
+    output.write_text(neutralize_report_embeds(body), encoding="utf-8")
     storage.insert_evidence_report("onion_url", str(output), generated_by, site_card_id=item.get("site_card_id"))
     return str(output)
 
@@ -338,6 +350,6 @@ Restricted and metadata-only items never include preview references or content e
 """
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     output = REPORTS_DIR / f"report_cluster_{cluster_id}_{generated.strftime('%Y%m%d_%H%M%S')}.md"
-    output.write_text(body, encoding="utf-8")
+    output.write_text(neutralize_report_embeds(body), encoding="utf-8")
     storage.insert_evidence_report("mirror_cluster", str(output), generated_by, cluster_id=cluster_id)
     return str(output)

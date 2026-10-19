@@ -56,6 +56,10 @@ bash RUN_AFTER_UPLOAD.sh restart-bot
 
 Dashboard codes are one-time and expire. The bot and dashboard use the same
 dedicated access database. Do not delete that database as a routine repair.
+Request codes and access controls only in a private chat with the bot. Browser
+sessions stay in the server-side Streamlit session; the URL never carries an
+access token. Reloading the browser page starts a new session and requires a
+new one-time code.
 
 ## Database operations
 

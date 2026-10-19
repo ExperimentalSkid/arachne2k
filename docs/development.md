@@ -44,5 +44,25 @@ Do not regenerate `SOURCE_MANIFEST.json` until all source edits for a release
 are complete. A manifest is a receipt for an exact tree, not a development
 lockfile.
 
+The manifest also records the approved source paths. A new source-shaped file
+causes the release build to stop until its contents have been reviewed. Refresh
+hashes after ordinary edits with:
+
+```bash
+python scripts/make_clean_release.py --refresh-manifest
+```
+
+Approve each intentional new path while refreshing the manifest, for example:
+
+```bash
+python scripts/make_clean_release.py --approve-source tests/test_new_boundary.py
+```
+
+After deleting an approved source file, retire its path with `--retire-source`
+using the same command. The builder refuses unreviewed additions and missing
+approved files.
+
+Then run `--verify-source`, build the archive, and verify the extracted archive.
+
 See [Testing](testing.md) and the concise durable rules in
 [`AGENTS.md`](../AGENTS.md).

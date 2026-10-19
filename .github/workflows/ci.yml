@@ -41,5 +41,13 @@ jobs:
           bash -n scripts/make_clean_release.sh
           python scripts/make_clean_release.py --verify-source
           python scripts/make_clean_release.py --audit-workspace --fail-on-dirty-workspace
-      - name: Run tests
-        run: python -m pytest -q
+      - name: Build and verify extracted source release
+        run: |
+          python scripts/make_clean_release.py "$RUNNER_TEMP/arachne-release.zip"
+          python scripts/make_clean_release.py --verify-archive "$RUNNER_TEMP/arachne-release.zip"
+          mkdir -p "$RUNNER_TEMP/arachne-extracted"
+          python -m zipfile -e "$RUNNER_TEMP/arachne-release.zip" "$RUNNER_TEMP/arachne-extracted"
+      - name: Run tests from extracted release
+        run: |
+          cd "$RUNNER_TEMP/arachne-extracted/arachne"
+          python -m pytest -q
