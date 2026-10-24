@@ -38,7 +38,7 @@ colorama==0.4.6
     #   pytest
     #   tqdm
     #   typer
-filelock==3.32.4
+filelock==4.2.1
     # via huggingface-hub
 fsspec==2026.7.0
     # via huggingface-hub
