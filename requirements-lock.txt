@@ -124,7 +124,7 @@ pyaes==1.6.1
     # via telethon
 pyarrow==25.0.1
     # via streamlit
-pyasn1==0.6.4
+pyasn1==0.6.5
     # via rsa
 pydeck==0.9.3
     # via streamlit
